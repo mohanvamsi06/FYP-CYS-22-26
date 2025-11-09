@@ -1,0 +1,300 @@
+---
+controls:
+version: "cis-1.11"
+id: 1
+text: "Control Plane Security Configuration"
+type: "master"
+groups:
+  - id: 1.1
+    text: "Control Plane Node Configuration Files"
+    checks:
+      - id: 1.1.1
+        text: "Ensure that the API server pod specification file permissions are set to 600 or more restrictive (Automated)"
+        audit: "/bin/sh -c 'if test -e /etc/kubernetes/manifests/kube-apiserver.yaml; then stat -c permissions=%a /etc/kubernetes/manifests/kube-apiserver.yaml; fi'"
+        tests:
+          test_items:
+            - flag: "permissions"
+              compare:
+                op: bitmask
+                value: "600"
+        remediation: |
+          Run the below command (based on the file location on your system) on the
+          control plane node.
+          For example, chmod 600 /etc/kubernetes/manifests/kube-apiserver.yaml
+
+      - id: 1.1.2
+        text: "Ensure that the API server pod specification file ownership is set to root:root (Automated)"
+        audit: "/bin/sh -c 'if test -e /etc/kubernetes/manifests/kube-apiserver.yaml; then stat -c %U:%G /etc/kubernetes/manifests/kube-apiserver.yaml; fi'"
+        tests:
+          test_items:
+            - flag: "root:root"
+        remediation: |
+          Run the below command (based on the file location on your system) on the control plane node.
+          For example, chown root:root /etc/kubernetes/manifests/kube-apiserver.yaml
+
+      - id: 1.1.3
+        text: "Ensure that the controller manager pod specification file permissions are set to 600 or more restrictive (Automated)"
+        audit: "/bin/sh -c 'if test -e /etc/kubernetes/manifests/kube-controller-manager.yaml; then stat -c permissions=%a /etc/kubernetes/manifests/kube-controller-manager.yaml; fi'"
+        tests:
+          test_items:
+            - flag: "permissions"
+              compare:
+                op: bitmask
+                value: "600"
+        remediation: |
+          Run the below command (based on the file location on your system) on the control plane node.
+          For example, chmod 600 /etc/kubernetes/manifests/kube-controller-manager.yaml
+
+      - id: 1.1.4
+        text: "Ensure that the controller manager pod specification file ownership is set to root:root (Automated)"
+        audit: "/bin/sh -c 'if test -e /etc/kubernetes/manifests/kube-controller-manager.yaml; then stat -c %U:%G /etc/kubernetes/manifests/kube-controller-manager.yaml; fi'"
+        tests:
+          test_items:
+            - flag: "root:root"
+        remediation: |
+          Run the below command (based on the file location on your system) on the control plane node.
+          For example, chown root:root /etc/kubernetes/manifests/kube-controller-manager.yaml
+
+      - id: 1.1.5
+        text: "Ensure that the scheduler pod specification file permissions are set to 600 or more restrictive (Automated)"
+        audit: "/bin/sh -c 'if test -e /etc/kubernetes/manifests/kube-scheduler.yaml; then stat -c permissions=%a /etc/kubernetes/manifests/kube-scheduler.yaml; fi'"
+        tests:
+          test_items:
+            - flag: "permissions"
+              compare:
+                op: bitmask
+                value: "600"
+        remediation: |
+          Run the below command (based on the file location on your system) on the control plane node.
+          For example, chmod 600 /etc/kubernetes/manifests/kube-scheduler.yaml
+
+      - id: 1.1.6
+        text: "Ensure that the scheduler pod specification file ownership is set to root:root (Automated)"
+        audit: "/bin/sh -c 'if test -e /etc/kubernetes/manifests/kube-scheduler.yaml; then stat -c %U:%G /etc/kubernetes/manifests/kube-scheduler.yaml; fi'"
+        tests:
+          test_items:
+            - flag: "root:root"
+        remediation: |
+          Run the below command (based on the file location on your system) on the control plane node.
+          For example, chown root:root /etc/kubernetes/manifests/kube-scheduler.yaml
+
+      - id: 1.1.7
+        text: "Ensure that the etcd pod specification file permissions are set to 600 or more restrictive (Automated)"
+        audit: "/bin/sh -c 'if test -e /etc/kubernetes/manifests/etcd.yaml; then find /etc/kubernetes/manifests/etcd.yaml -name '*etcd*' | xargs stat -c permissions=%a; fi'"
+        tests:
+          test_items:
+            - flag: "permissions"
+              compare:
+                op: bitmask
+                value: "600"
+        remediation: |
+          Run the below command (based on the file location on your system) on the control plane node.
+          For example,
+          chmod 600 /etc/kubernetes/manifests/etcd.yaml
+
+      - id: 1.1.8
+        text: "Ensure that the etcd pod specification file ownership is set to root:root (Automated)"
+        audit: "/bin/sh -c 'if test -e /etc/kubernetes/manifests/etcd.yaml; then find /etc/kubernetes/manifests/etcd.yaml -name '*etcd*' | xargs stat -c %U:%G; fi'"
+        tests:
+          test_items:
+            - flag: "root:root"
+        remediation: |
+          Run the below command (based on the file location on your system) on the control plane node.
+          For example,
+          chown root:root /etc/kubernetes/manifests/etcd.yaml
+
+      - id: 1.1.9
+        text: "Ensure that the Container Network Interface file permissions are set to 600 or more restrictive (Manual)"
+        audit: |
+          ps -ef | grep kubelet | grep -- --cni-conf-dir | sed 's%.*cni-conf-dir[= ]\([^ ]*\).*%\1%' | xargs -I{} find {} -mindepth 1 | xargs --no-run-if-empty stat -c permissions=%a
+          find /var/lib/cni/networks -type f 2> /dev/null | xargs --no-run-if-empty stat -c permissions=%a
+          find /etc/cni/net.d -type f 2> /dev/null | xargs --no-run-if-empty stat -c permissions=%a
+        use_multiple_values: true
+        tests:
+          test_items:
+            - flag: "permissions"
+              compare:
+                op: bitmask
+                value: "600"
+        remediation: |
+          Run the below command (based on the file location on your system) on the control plane node.
+          For example, chmod 600 <path/to/cni/files>
+
+      - id: 1.1.10
+        text: "Ensure that the Container Network Interface file ownership is set to root:root (Manual)"
+        audit: |
+          ps -ef | grep kubelet | grep -- --cni-conf-dir | sed 's%.*cni-conf-dir[= ]\([^ ]*\).*%\1%' | xargs -I{} find {} -mindepth 1 | xargs --no-run-if-empty stat -c %U:%G
+          find /var/lib/cni/networks -type f 2> /dev/null | xargs --no-run-if-empty stat -c %U:%G
+          find /etc/cni/net.d -type f 2> /dev/null | xargs --no-run-if-empty stat -c %U:%G
+        use_multiple_values: true
+        tests:
+          test_items:
+            - flag: "root:root"
+        remediation: |
+          Run the below command (based on the file location on your system) on the control plane node.
+          For example,
+          chown root:root <path/to/cni/files>
+
+      - id: 1.1.11
+        text: "Ensure that the etcd data directory permissions are set to 700 or more restrictive (Automated)"
+        audit: |
+          DATA_DIR=''
+          for d in $(ps -ef | grep etcd | grep -- --data-dir | sed 's%.*data-dir[= ]\([^ ]*\).*%\1%'); do
+            if test -d "$d"; then DATA_DIR="$d"; fi
+          done
+          if ! test -d "$DATA_DIR"; then DATA_DIR=$etcddatadir; fi
+          stat -c permissions=%a "$DATA_DIR"
+        tests:
+          test_items:
+            - flag: "permissions"
+              compare:
+                op: bitmask
+                value: "700"
+        remediation: |
+          On the etcd server node, get the etcd data directory, passed as an argument --data-dir,
+          from the command 'ps -ef | grep etcd'.
+          Run the below command (based on the etcd data directory found above). For example,
+          chmod 700 /var/lib/etcd
+
+      - id: 1.1.12
+        text: "Ensure that the etcd data directory ownership is set to etcd:etcd (Automated)"
+        audit: |
+          DATA_DIR=''
+          for d in $(ps -ef | grep etcd | grep -- --data-dir | sed 's%.*data-dir[= ]\([^ ]*\).*%\1%'); do
+            if test -d "$d"; then DATA_DIR="$d"; fi
+          done
+          if ! test -d "$DATA_DIR"; then DATA_DIR=$etcddatadir; fi
+          stat -c %U:%G "$DATA_DIR"
+        tests:
+          test_items:
+            - flag: "etcd:etcd"
+        remediation: |
+          On the etcd server node, get the etcd data directory, passed as an argument --data-dir,
+          from the command 'ps -ef | grep etcd'.
+          Run the below command (based on the etcd data directory found above).
+          For example, chown etcd:etcd /var/lib/etcd
+
+      - id: 1.1.13
+        text: "Ensure that the default administrative credential file permissions are set to 600 (Automated)"
+        audit: |
+          /bin/sh -c 'for adminconf in /etc/kubernetes/admin.conf /etc/kubernetes/super-admin.conf; do if [ -e "$adminconf" ]; then stat -c "permissions=%a %n" "$adminconf"; fi; done'
+        tests:
+          test_items:
+            - flag: "permissions"
+              compare:
+                op: bitmask
+                value: "600"
+        remediation: |
+          Run the below command (based on the file location on your system) on the control plane node.
+          For example, chmod 600 /etc/kubernetes/admin.conf
+          On Kubernetes 1.29+ the super-admin.conf file should also be modified, if present.
+          For example, chmod 600 /etc/kubernetes/super-admin.conf
+
+      - id: 1.1.14
+        text: "Ensure that the default administrative credential file ownership is set to root:root (Automated)"
+        audit: |
+          /bin/sh -c 'for adminconf in /etc/kubernetes/admin.conf /etc/kubernetes/super-admin.conf; do if [ -e "$adminconf" ]; then stat -c "ownership=%U:%G %n" "$adminconf"; fi; done'
+        use_multiple_values: true
+        tests:
+          test_items:
+            - flag: "ownership"
+              compare:
+                op: eq
+                value: "root:root"
+        remediation: |
+          Run the below command (based on the file location on your system) on the control plane node.
+          For example, chown root:root /etc/kubernetes/admin.conf
+          On Kubernetes 1.29+ the super-admin.conf file should also be modified, if present.
+          For example, chown root:root /etc/kubernetes/super-admin.conf
+
+      - id: 1.1.15
+        text: "Ensure that the scheduler.conf file permissions are set to 600 or more restrictive (Automated)"
+        audit: "/bin/sh -c 'if test -e /etc/kubernetes/scheduler.conf; then stat -c permissions=%a /etc/kubernetes/scheduler.conf; fi'"
+        tests:
+          test_items:
+            - flag: "permissions"
+              compare:
+                op: bitmask
+                value: "600"
+        remediation: |
+          Run the below command (based on the file location on your system) on the control plane node.
+          For example,
+          chmod 600 /etc/kubernetes/scheduler.conf
+
+      - id: 1.1.16
+        text: "Ensure that the scheduler.conf file ownership is set to root:root (Automated)"      
+        audit: "/bin/sh -c 'if test -e /etc/kubernetes/scheduler.conf; then stat -c %U:%G /etc/kubernetes/scheduler.conf; fi'"
+        tests:
+          test_items:
+            - flag: "root:root"
+        remediation: |
+          Run the below command (based on the file location on your system) on the control plane node.
+          For example,
+          chown root:root /etc/kubernetes/scheduler.conf
+
+      - id: 1.1.17
+        text: "Ensure that the controller-manager.conf file permissions are set to 600 or more restrictive (Automated)"
+        audit: "/bin/sh -c 'if test -e /etc/kubernetes/controller-manager.conf; then stat -c permissions=%a /etc/kubernetes/controller-manager.conf; fi'"
+        tests:
+          test_items:
+            - flag: "permissions"
+              compare:
+                op: bitmask
+                value: "600"
+        remediation: |
+          Run the below command (based on the file location on your system) on the control plane node.
+          For example,
+          chmod 600 /etc/kubernetes/controller-manager.conf
+
+      - id: 1.1.18
+        text: "Ensure that the controller-manager.conf file ownership is set to root:root (Automated)"
+        audit: "/bin/sh -c 'if test -e /etc/kubernetes/controller-manager.conf; then stat -c %U:%G /etc/kubernetes/controller-manager.conf; fi'"
+        tests:
+          test_items:
+            - flag: "root:root"
+        remediation: |
+          Run the below command (based on the file location on your system) on the control plane node.
+          For example,
+          chown root:root /etc/kubernetes/controller-manager.conf
+
+      - id: 1.1.19
+        text: "Ensure that the Kubernetes PKI directory and file ownership is set to root:root (Automated)"
+        audit: "find /etc/kubernetes/pki/ | xargs stat -c %U:%G"
+        use_multiple_values: true
+        tests:
+          test_items:
+            - flag: "root:root"
+        remediation: |
+          Run the below command (based on the file location on your system) on the control plane node.
+          For example,
+          chown -R root:root /etc/kubernetes/pki/
+
+      - id: 1.1.20
+        text: "Ensure that the Kubernetes PKI certificate file permissions are set to 644 or more restrictive (Manual)"
+        audit: "find /etc/kubernetes/pki/ -name '*.crt' | xargs stat -c permissions=%a"
+        use_multiple_values: true
+        tests:
+          test_items:
+            - flag: "permissions"
+              compare:
+                op: bitmask
+                value: "644"
+        remediation: |
+          Run the below command (based on the file location on your system) on the control plane node.
+          For example,
+          chmod -R 644 /etc/kubernetes/pki/*.crt
+
+      - id: 1.1.21
+        text: "Ensure that the Kubernetes PKI key file permissions are set to 600 (Manual)"
+        audit: "find /etc/kubernetes/pki/ -name '*.key' | xargs stat -c permissions=%a"
+        use_multiple_values: true
+        tests:
+          test_items:
+            - flag: "permissions"
+              compare:
+                op: bitmask
+                value: "600"
+        remediation: |
+          Run the below command (based on the file location on your system) on the control plane node.
+          For example,
+          chmod -R 600 /etc/kubernetes/pki/*.key

@@ -1,0 +1,631 @@
+[
+    {
+        "check_id": "3.1.1",
+        "description": "Client certificate authentication should not be used for users (Manual)",
+        "status": "WARN",
+        "reason": "Manual Check, Please verify the recommendation and follow the remediation if needed",
+        "remediation": "Alternative mechanisms provided by Kubernetes such as the use of OIDC should be\nimplemented in place of client certificates.",
+        "_source_file": "cis-1.11/controlplane.yaml"
+    },
+    {
+        "check_id": "3.1.2",
+        "description": "Service account token authentication should not be used for users (Manual)",
+        "status": "WARN",
+        "reason": "Manual Check, Please verify the recommendation and follow the remediation if needed",
+        "remediation": "Alternative mechanisms provided by Kubernetes such as the use of OIDC should be implemented\nin place of service account tokens.",
+        "_source_file": "cis-1.11/controlplane.yaml"
+    },
+    {
+        "check_id": "3.1.3",
+        "description": "Bootstrap token authentication should not be used for users (Manual)",
+        "status": "WARN",
+        "reason": "Manual Check, Please verify the recommendation and follow the remediation if needed",
+        "remediation": "Alternative mechanisms provided by Kubernetes such as the use of OIDC should be implemented\nin place of bootstrap tokens.",
+        "_source_file": "cis-1.11/controlplane.yaml"
+    },
+    {
+        "check_id": "3.2.1",
+        "description": "Ensure that a minimal audit policy is created (Manual)",
+        "status": "FAIL",
+        "reason": "['--audit-policy-file'] missing",
+        "audit_command": "/bin/ps -ef | grep kube-apiserver | grep -v grep",
+        "audit_output": "root        2675    2488  4 14:47 ?        00:16:35 kube-apiserver --advertise-address=10.0.2.15 --allow-privileged=true --authorization-mode=Node,RBAC --client-ca-file=/etc/kubernetes/pki/ca.crt --enable-admission-plugins=NodeRestriction --enable-bootstrap-token-auth=true --etcd-cafile=/etc/kubernetes/pki/etcd/ca.crt --etcd-certfile=/etc/kubernetes/pki/apiserver-etcd-client.crt --etcd-keyfile=/etc/kubernetes/pki/apiserver-etcd-client.key --etcd-servers=https://127.0.0.1:2379 --kubelet-client-certificate=/etc/kubernetes/pki/apiserver-kubelet-client.crt --kubelet-client-key=/etc/kubernetes/pki/apiserver-kubelet-client.key --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname --proxy-client-cert-file=/etc/kubernetes/pki/front-proxy-client.crt --proxy-client-key-file=/etc/kubernetes/pki/front-proxy-client.key --requestheader-allowed-names=front-proxy-client --requestheader-client-ca-file=/etc/kubernetes/pki/front-proxy-ca.crt --requestheader-extra-headers-prefix=X-Remote-Extra- --requestheader-group-headers=X-Remote-Group --requestheader-username-headers=X-Remote-User --secure-port=6443 --service-account-issuer=https://kubernetes.default.svc.cluster.local --service-account-key-file=/etc/kubernetes/pki/sa.pub --service-account-signing-key-file=/etc/kubernetes/pki/sa.key --service-cluster-ip-range=10.96.0.0/12 --tls-cert-file=/etc/kubernetes/pki/apiserver.crt --tls-private-key-file=/etc/kubernetes/pki/apiserver.key",
+        "remediation": "Create an audit policy file for your cluster.",
+        "_source_file": "cis-1.11/controlplane.yaml"
+    },
+    {
+        "check_id": "3.2.2",
+        "description": "Ensure that the audit policy covers key security concerns (Manual)",
+        "status": "WARN",
+        "reason": "Manual Check, Please verify the recommendation and follow the remediation if needed",
+        "remediation": "Review the audit policy provided for the cluster and ensure that it covers\nat least the following areas,\n- Access to Secrets managed by the cluster. Care should be taken to only\n  log Metadata for requests to Secrets, ConfigMaps, and TokenReviews, in\n  order to avoid risk of logging sensitive data.\n- Modification of Pod and Deployment objects.\n- Use of `pods/exec`, `pods/portforward`, `pods/proxy` and `services/proxy`.\nFor most requests, minimally logging at the Metadata level is recommended\n(the most basic level of logging).",
+        "_source_file": "cis-1.11/controlplane.yaml"
+    },
+    {
+        "check_id": 2.1,
+        "description": "Ensure that the --cert-file and --key-file arguments are set as appropriate (Automated)",
+        "status": "PASS",
+        "reason": "Found ['--cert-file', 'ETCD_CERT_FILE']; Found ['--key-file', 'ETCD_KEY_FILE']",
+        "audit_command": "/bin/ps -ef | /bin/grep etcd | /bin/grep -v grep",
+        "audit_output": "root        2675    2488  4 14:47 ?        00:16:35 kube-apiserver --advertise-address=10.0.2.15 --allow-privileged=true --authorization-mode=Node,RBAC --client-ca-file=/etc/kubernetes/pki/ca.crt --enable-admission-plugins=NodeRestriction --enable-bootstrap-token-auth=true --etcd-cafile=/etc/kubernetes/pki/etcd/ca.crt --etcd-certfile=/etc/kubernetes/pki/apiserver-etcd-client.crt --etcd-keyfile=/etc/kubernetes/pki/apiserver-etcd-client.key --etcd-servers=https://127.0.0.1:2379 --kubelet-client-certificate=/etc/kubernetes/pki/apiserver-kubelet-client.crt --kubelet-client-key=/etc/kubernetes/pki/apiserver-kubelet-client.key --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname --proxy-client-cert-file=/etc/kubernetes/pki/front-proxy-client.crt --proxy-client-key-file=/etc/kubernetes/pki/front-proxy-client.key --requestheader-allowed-names=front-proxy-client --requestheader-client-ca-file=/etc/kubernetes/pki/front-proxy-ca.crt --requestheader-extra-headers-prefix=X-Remote-Extra- --requestheader-group-headers=X-Remote-Group --requestheader-username-headers=X-Remote-User --secure-port=6443 --service-account-issuer=https://kubernetes.default.svc.cluster.local --service-account-key-file=/etc/kubernetes/pki/sa.pub --service-account-signing-key-file=/etc/kubernetes/pki/sa.key --service-cluster-ip-range=10.96.0.0/12 --tls-cert-file=/etc/kubernetes/pki/apiserver.crt --tls-private-key-file=/etc/kubernetes/pki/apiserver.key\nroot        2745    2486  2 14:47 ?        00:08:53 etcd --advertise-client-urls=https://10.0.2.15:2379 --cert-file=/etc/kubernetes/pki/etcd/server.crt --client-cert-auth=true --data-dir=/var/lib/etcd --experimental-initial-corrupt-check=true --experimental-watch-progress-notify-interval=5s --initial-advertise-peer-urls=https://10.0.2.15:2380 --initial-cluster=kubernetes=https://10.0.2.15:2380 --key-file=/etc/kubernetes/pki/etcd/server.key --listen-client-urls=https://127.0.0.1:2379,https://10.0.2.15:2379 --listen-metrics-urls=http://127.0.0.1:2381 --listen-peer-urls=https://10.0.2.15:2380 --name=kubernetes --peer-cert-file=/etc/kubernetes/pki/etcd/peer.crt --peer-client-cert-auth=true --peer-key-file=/etc/kubernetes/pki/etcd/peer.key --peer-trusted-ca-file=/etc/kubernetes/pki/etcd/ca.crt --snapshot-count=10000 --trusted-ca-file=/etc/kubernetes/pki/etcd/ca.crt",
+        "remediation": "Follow the etcd service documentation and configure TLS encryption.\nThen, edit the etcd pod specification file /etc/kubernetes/manifests/etcd.yaml\non the master node and set the below parameters.\n--cert-file=</path/to/ca-file>\n--key-file=</path/to/key-file>",
+        "_source_file": "cis-1.11/etcd.yaml"
+    },
+    {
+        "check_id": 2.2,
+        "description": "Ensure that the --cert-file and --key-file arguments are set as appropriate (Automated)",
+        "status": "PASS",
+        "reason": "Found ['--cert-file', 'ETCD_CERT_FILE']; Found ['--key-file', 'ETCD_KEY_FILE']",
+        "audit_command": "/bin/ps -ef | /bin/grep etcd | /bin/grep -v grep",
+        "audit_output": "root        2675    2488  4 14:47 ?        00:16:35 kube-apiserver --advertise-address=10.0.2.15 --allow-privileged=true --authorization-mode=Node,RBAC --client-ca-file=/etc/kubernetes/pki/ca.crt --enable-admission-plugins=NodeRestriction --enable-bootstrap-token-auth=true --etcd-cafile=/etc/kubernetes/pki/etcd/ca.crt --etcd-certfile=/etc/kubernetes/pki/apiserver-etcd-client.crt --etcd-keyfile=/etc/kubernetes/pki/apiserver-etcd-client.key --etcd-servers=https://127.0.0.1:2379 --kubelet-client-certificate=/etc/kubernetes/pki/apiserver-kubelet-client.crt --kubelet-client-key=/etc/kubernetes/pki/apiserver-kubelet-client.key --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname --proxy-client-cert-file=/etc/kubernetes/pki/front-proxy-client.crt --proxy-client-key-file=/etc/kubernetes/pki/front-proxy-client.key --requestheader-allowed-names=front-proxy-client --requestheader-client-ca-file=/etc/kubernetes/pki/front-proxy-ca.crt --requestheader-extra-headers-prefix=X-Remote-Extra- --requestheader-group-headers=X-Remote-Group --requestheader-username-headers=X-Remote-User --secure-port=6443 --service-account-issuer=https://kubernetes.default.svc.cluster.local --service-account-key-file=/etc/kubernetes/pki/sa.pub --service-account-signing-key-file=/etc/kubernetes/pki/sa.key --service-cluster-ip-range=10.96.0.0/12 --tls-cert-file=/etc/kubernetes/pki/apiserver.crt --tls-private-key-file=/etc/kubernetes/pki/apiserver.key\nroot        2745    2486  2 14:47 ?        00:08:53 etcd --advertise-client-urls=https://10.0.2.15:2379 --cert-file=/etc/kubernetes/pki/etcd/server.crt --client-cert-auth=true --data-dir=/var/lib/etcd --experimental-initial-corrupt-check=true --experimental-watch-progress-notify-interval=5s --initial-advertise-peer-urls=https://10.0.2.15:2380 --initial-cluster=kubernetes=https://10.0.2.15:2380 --key-file=/etc/kubernetes/pki/etcd/server.key --listen-client-urls=https://127.0.0.1:2379,https://10.0.2.15:2379 --listen-metrics-urls=http://127.0.0.1:2381 --listen-peer-urls=https://10.0.2.15:2380 --name=kubernetes --peer-cert-file=/etc/kubernetes/pki/etcd/peer.crt --peer-client-cert-auth=true --peer-key-file=/etc/kubernetes/pki/etcd/peer.key --peer-trusted-ca-file=/etc/kubernetes/pki/etcd/ca.crt --snapshot-count=10000 --trusted-ca-file=/etc/kubernetes/pki/etcd/ca.crt",
+        "remediation": "Follow the etcd service documentation and configure TLS encryption.\nThen, edit the etcd pod specification file /etc/kubernetes/manifests/etcd.yaml\non the master node and set the below parameters.\n--cert-file=</path/to/ca-file>\n--key-file=</path/to/key-file>",
+        "_source_file": "cis-1.11/etcd.yaml"
+    },
+    {
+        "check_id": 2.3,
+        "description": "Ensure that the --client-cert-auth argument is set to true (Automated)",
+        "status": "FAIL",
+        "reason": "['--client-cert-auth', 'ETCD_CLIENT_CERT_AUTH'] != True",
+        "audit_command": "/bin/ps -ef | /bin/grep etcd | /bin/grep -v grep",
+        "audit_output": "root        2675    2488  4 14:47 ?        00:16:35 kube-apiserver --advertise-address=10.0.2.15 --allow-privileged=true --authorization-mode=Node,RBAC --client-ca-file=/etc/kubernetes/pki/ca.crt --enable-admission-plugins=NodeRestriction --enable-bootstrap-token-auth=true --etcd-cafile=/etc/kubernetes/pki/etcd/ca.crt --etcd-certfile=/etc/kubernetes/pki/apiserver-etcd-client.crt --etcd-keyfile=/etc/kubernetes/pki/apiserver-etcd-client.key --etcd-servers=https://127.0.0.1:2379 --kubelet-client-certificate=/etc/kubernetes/pki/apiserver-kubelet-client.crt --kubelet-client-key=/etc/kubernetes/pki/apiserver-kubelet-client.key --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname --proxy-client-cert-file=/etc/kubernetes/pki/front-proxy-client.crt --proxy-client-key-file=/etc/kubernetes/pki/front-proxy-client.key --requestheader-allowed-names=front-proxy-client --requestheader-client-ca-file=/etc/kubernetes/pki/front-proxy-ca.crt --requestheader-extra-headers-prefix=X-Remote-Extra- --requestheader-group-headers=X-Remote-Group --requestheader-username-headers=X-Remote-User --secure-port=6443 --service-account-issuer=https://kubernetes.default.svc.cluster.local --service-account-key-file=/etc/kubernetes/pki/sa.pub --service-account-signing-key-file=/etc/kubernetes/pki/sa.key --service-cluster-ip-range=10.96.0.0/12 --tls-cert-file=/etc/kubernetes/pki/apiserver.crt --tls-private-key-file=/etc/kubernetes/pki/apiserver.key\nroot        2745    2486  2 14:47 ?        00:08:53 etcd --advertise-client-urls=https://10.0.2.15:2379 --cert-file=/etc/kubernetes/pki/etcd/server.crt --client-cert-auth=true --data-dir=/var/lib/etcd --experimental-initial-corrupt-check=true --experimental-watch-progress-notify-interval=5s --initial-advertise-peer-urls=https://10.0.2.15:2380 --initial-cluster=kubernetes=https://10.0.2.15:2380 --key-file=/etc/kubernetes/pki/etcd/server.key --listen-client-urls=https://127.0.0.1:2379,https://10.0.2.15:2379 --listen-metrics-urls=http://127.0.0.1:2381 --listen-peer-urls=https://10.0.2.15:2380 --name=kubernetes --peer-cert-file=/etc/kubernetes/pki/etcd/peer.crt --peer-client-cert-auth=true --peer-key-file=/etc/kubernetes/pki/etcd/peer.key --peer-trusted-ca-file=/etc/kubernetes/pki/etcd/ca.crt --snapshot-count=10000 --trusted-ca-file=/etc/kubernetes/pki/etcd/ca.crt",
+        "remediation": "Edit the etcd pod specification file $etcdconf on the master\nnode and set the below parameter.\n--client-cert-auth=\"true\"",
+        "_source_file": "cis-1.11/etcd.yaml"
+    },
+    {
+        "check_id": 2.4,
+        "description": "Ensure that the --auto-tls argument is not set to true (Automated)",
+        "status": "FAIL",
+        "reason": "['--auto-tls', 'ETCD_AUTO_TLS'] correctly unset; ['--auto-tls', 'ETCD_AUTO_TLS'] != False",
+        "audit_command": "/bin/ps -ef | /bin/grep etcd | /bin/grep -v grep",
+        "audit_output": "root        2675    2488  4 14:47 ?        00:16:35 kube-apiserver --advertise-address=10.0.2.15 --allow-privileged=true --authorization-mode=Node,RBAC --client-ca-file=/etc/kubernetes/pki/ca.crt --enable-admission-plugins=NodeRestriction --enable-bootstrap-token-auth=true --etcd-cafile=/etc/kubernetes/pki/etcd/ca.crt --etcd-certfile=/etc/kubernetes/pki/apiserver-etcd-client.crt --etcd-keyfile=/etc/kubernetes/pki/apiserver-etcd-client.key --etcd-servers=https://127.0.0.1:2379 --kubelet-client-certificate=/etc/kubernetes/pki/apiserver-kubelet-client.crt --kubelet-client-key=/etc/kubernetes/pki/apiserver-kubelet-client.key --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname --proxy-client-cert-file=/etc/kubernetes/pki/front-proxy-client.crt --proxy-client-key-file=/etc/kubernetes/pki/front-proxy-client.key --requestheader-allowed-names=front-proxy-client --requestheader-client-ca-file=/etc/kubernetes/pki/front-proxy-ca.crt --requestheader-extra-headers-prefix=X-Remote-Extra- --requestheader-group-headers=X-Remote-Group --requestheader-username-headers=X-Remote-User --secure-port=6443 --service-account-issuer=https://kubernetes.default.svc.cluster.local --service-account-key-file=/etc/kubernetes/pki/sa.pub --service-account-signing-key-file=/etc/kubernetes/pki/sa.key --service-cluster-ip-range=10.96.0.0/12 --tls-cert-file=/etc/kubernetes/pki/apiserver.crt --tls-private-key-file=/etc/kubernetes/pki/apiserver.key\nroot        2745    2486  2 14:47 ?        00:08:53 etcd --advertise-client-urls=https://10.0.2.15:2379 --cert-file=/etc/kubernetes/pki/etcd/server.crt --client-cert-auth=true --data-dir=/var/lib/etcd --experimental-initial-corrupt-check=true --experimental-watch-progress-notify-interval=5s --initial-advertise-peer-urls=https://10.0.2.15:2380 --initial-cluster=kubernetes=https://10.0.2.15:2380 --key-file=/etc/kubernetes/pki/etcd/server.key --listen-client-urls=https://127.0.0.1:2379,https://10.0.2.15:2379 --listen-metrics-urls=http://127.0.0.1:2381 --listen-peer-urls=https://10.0.2.15:2380 --name=kubernetes --peer-cert-file=/etc/kubernetes/pki/etcd/peer.crt --peer-client-cert-auth=true --peer-key-file=/etc/kubernetes/pki/etcd/peer.key --peer-trusted-ca-file=/etc/kubernetes/pki/etcd/ca.crt --snapshot-count=10000 --trusted-ca-file=/etc/kubernetes/pki/etcd/ca.crt",
+        "remediation": "Edit the etcd pod specification file $etcdconf on the master\nnode and either remove the --auto-tls parameter or set it to false.\n  --auto-tls=false",
+        "_source_file": "cis-1.11/etcd.yaml"
+    },
+    {
+        "check_id": 2.5,
+        "description": "Ensure that the --peer-cert-file and --peer-key-file arguments are set as appropriate (Automated)",
+        "status": "PASS",
+        "reason": "Found ['--peer-cert-file', 'ETCD_PEER_CERT_FILE']; Found ['--peer-key-file', 'ETCD_PEER_KEY_FILE']",
+        "audit_command": "/bin/ps -ef | /bin/grep etcd | /bin/grep -v grep",
+        "audit_output": "root        2675    2488  4 14:47 ?        00:16:35 kube-apiserver --advertise-address=10.0.2.15 --allow-privileged=true --authorization-mode=Node,RBAC --client-ca-file=/etc/kubernetes/pki/ca.crt --enable-admission-plugins=NodeRestriction --enable-bootstrap-token-auth=true --etcd-cafile=/etc/kubernetes/pki/etcd/ca.crt --etcd-certfile=/etc/kubernetes/pki/apiserver-etcd-client.crt --etcd-keyfile=/etc/kubernetes/pki/apiserver-etcd-client.key --etcd-servers=https://127.0.0.1:2379 --kubelet-client-certificate=/etc/kubernetes/pki/apiserver-kubelet-client.crt --kubelet-client-key=/etc/kubernetes/pki/apiserver-kubelet-client.key --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname --proxy-client-cert-file=/etc/kubernetes/pki/front-proxy-client.crt --proxy-client-key-file=/etc/kubernetes/pki/front-proxy-client.key --requestheader-allowed-names=front-proxy-client --requestheader-client-ca-file=/etc/kubernetes/pki/front-proxy-ca.crt --requestheader-extra-headers-prefix=X-Remote-Extra- --requestheader-group-headers=X-Remote-Group --requestheader-username-headers=X-Remote-User --secure-port=6443 --service-account-issuer=https://kubernetes.default.svc.cluster.local --service-account-key-file=/etc/kubernetes/pki/sa.pub --service-account-signing-key-file=/etc/kubernetes/pki/sa.key --service-cluster-ip-range=10.96.0.0/12 --tls-cert-file=/etc/kubernetes/pki/apiserver.crt --tls-private-key-file=/etc/kubernetes/pki/apiserver.key\nroot        2745    2486  2 14:47 ?        00:08:53 etcd --advertise-client-urls=https://10.0.2.15:2379 --cert-file=/etc/kubernetes/pki/etcd/server.crt --client-cert-auth=true --data-dir=/var/lib/etcd --experimental-initial-corrupt-check=true --experimental-watch-progress-notify-interval=5s --initial-advertise-peer-urls=https://10.0.2.15:2380 --initial-cluster=kubernetes=https://10.0.2.15:2380 --key-file=/etc/kubernetes/pki/etcd/server.key --listen-client-urls=https://127.0.0.1:2379,https://10.0.2.15:2379 --listen-metrics-urls=http://127.0.0.1:2381 --listen-peer-urls=https://10.0.2.15:2380 --name=kubernetes --peer-cert-file=/etc/kubernetes/pki/etcd/peer.crt --peer-client-cert-auth=true --peer-key-file=/etc/kubernetes/pki/etcd/peer.key --peer-trusted-ca-file=/etc/kubernetes/pki/etcd/ca.crt --snapshot-count=10000 --trusted-ca-file=/etc/kubernetes/pki/etcd/ca.crt",
+        "remediation": "Follow the etcd service documentation and configure peer TLS encryption as appropriate\nfor your etcd cluster.\nThen, edit the etcd pod specification file $etcdconf on the\nmaster node and set the below parameters.\n--peer-client-file=</path/to/peer-cert-file>\n--peer-key-file=</path/to/peer-key-file>",
+        "_source_file": "cis-1.11/etcd.yaml"
+    },
+    {
+        "check_id": 2.6,
+        "description": "Ensure that the --peer-client-cert-auth argument is set to true (Automated)",
+        "status": "FAIL",
+        "reason": "['--peer-client-cert-auth', 'ETCD_PEER_CLIENT_CERT_AUTH'] != True",
+        "audit_command": "/bin/ps -ef | /bin/grep etcd | /bin/grep -v grep",
+        "audit_output": "root        2675    2488  4 14:47 ?        00:16:35 kube-apiserver --advertise-address=10.0.2.15 --allow-privileged=true --authorization-mode=Node,RBAC --client-ca-file=/etc/kubernetes/pki/ca.crt --enable-admission-plugins=NodeRestriction --enable-bootstrap-token-auth=true --etcd-cafile=/etc/kubernetes/pki/etcd/ca.crt --etcd-certfile=/etc/kubernetes/pki/apiserver-etcd-client.crt --etcd-keyfile=/etc/kubernetes/pki/apiserver-etcd-client.key --etcd-servers=https://127.0.0.1:2379 --kubelet-client-certificate=/etc/kubernetes/pki/apiserver-kubelet-client.crt --kubelet-client-key=/etc/kubernetes/pki/apiserver-kubelet-client.key --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname --proxy-client-cert-file=/etc/kubernetes/pki/front-proxy-client.crt --proxy-client-key-file=/etc/kubernetes/pki/front-proxy-client.key --requestheader-allowed-names=front-proxy-client --requestheader-client-ca-file=/etc/kubernetes/pki/front-proxy-ca.crt --requestheader-extra-headers-prefix=X-Remote-Extra- --requestheader-group-headers=X-Remote-Group --requestheader-username-headers=X-Remote-User --secure-port=6443 --service-account-issuer=https://kubernetes.default.svc.cluster.local --service-account-key-file=/etc/kubernetes/pki/sa.pub --service-account-signing-key-file=/etc/kubernetes/pki/sa.key --service-cluster-ip-range=10.96.0.0/12 --tls-cert-file=/etc/kubernetes/pki/apiserver.crt --tls-private-key-file=/etc/kubernetes/pki/apiserver.key\nroot        2745    2486  2 14:47 ?        00:08:53 etcd --advertise-client-urls=https://10.0.2.15:2379 --cert-file=/etc/kubernetes/pki/etcd/server.crt --client-cert-auth=true --data-dir=/var/lib/etcd --experimental-initial-corrupt-check=true --experimental-watch-progress-notify-interval=5s --initial-advertise-peer-urls=https://10.0.2.15:2380 --initial-cluster=kubernetes=https://10.0.2.15:2380 --key-file=/etc/kubernetes/pki/etcd/server.key --listen-client-urls=https://127.0.0.1:2379,https://10.0.2.15:2379 --listen-metrics-urls=http://127.0.0.1:2381 --listen-peer-urls=https://10.0.2.15:2380 --name=kubernetes --peer-cert-file=/etc/kubernetes/pki/etcd/peer.crt --peer-client-cert-auth=true --peer-key-file=/etc/kubernetes/pki/etcd/peer.key --peer-trusted-ca-file=/etc/kubernetes/pki/etcd/ca.crt --snapshot-count=10000 --trusted-ca-file=/etc/kubernetes/pki/etcd/ca.crt",
+        "remediation": "Edit the etcd pod specification file $etcdconf on the master\nnode and set the below parameter.\n--peer-client-cert-auth=true",
+        "_source_file": "cis-1.11/etcd.yaml"
+    },
+    {
+        "check_id": 2.7,
+        "description": "Ensure that the --peer-auto-tls argument is not set to true (Automated)",
+        "status": "FAIL",
+        "reason": "['--peer-auto-tls', 'ETCD_PEER_AUTO_TLS'] correctly unset; ['--peer-auto-tls', 'ETCD_PEER_AUTO_TLS'] != False",
+        "audit_command": "/bin/ps -ef | /bin/grep etcd | /bin/grep -v grep",
+        "audit_output": "root        2675    2488  4 14:47 ?        00:16:35 kube-apiserver --advertise-address=10.0.2.15 --allow-privileged=true --authorization-mode=Node,RBAC --client-ca-file=/etc/kubernetes/pki/ca.crt --enable-admission-plugins=NodeRestriction --enable-bootstrap-token-auth=true --etcd-cafile=/etc/kubernetes/pki/etcd/ca.crt --etcd-certfile=/etc/kubernetes/pki/apiserver-etcd-client.crt --etcd-keyfile=/etc/kubernetes/pki/apiserver-etcd-client.key --etcd-servers=https://127.0.0.1:2379 --kubelet-client-certificate=/etc/kubernetes/pki/apiserver-kubelet-client.crt --kubelet-client-key=/etc/kubernetes/pki/apiserver-kubelet-client.key --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname --proxy-client-cert-file=/etc/kubernetes/pki/front-proxy-client.crt --proxy-client-key-file=/etc/kubernetes/pki/front-proxy-client.key --requestheader-allowed-names=front-proxy-client --requestheader-client-ca-file=/etc/kubernetes/pki/front-proxy-ca.crt --requestheader-extra-headers-prefix=X-Remote-Extra- --requestheader-group-headers=X-Remote-Group --requestheader-username-headers=X-Remote-User --secure-port=6443 --service-account-issuer=https://kubernetes.default.svc.cluster.local --service-account-key-file=/etc/kubernetes/pki/sa.pub --service-account-signing-key-file=/etc/kubernetes/pki/sa.key --service-cluster-ip-range=10.96.0.0/12 --tls-cert-file=/etc/kubernetes/pki/apiserver.crt --tls-private-key-file=/etc/kubernetes/pki/apiserver.key\nroot        2745    2486  2 14:47 ?        00:08:53 etcd --advertise-client-urls=https://10.0.2.15:2379 --cert-file=/etc/kubernetes/pki/etcd/server.crt --client-cert-auth=true --data-dir=/var/lib/etcd --experimental-initial-corrupt-check=true --experimental-watch-progress-notify-interval=5s --initial-advertise-peer-urls=https://10.0.2.15:2380 --initial-cluster=kubernetes=https://10.0.2.15:2380 --key-file=/etc/kubernetes/pki/etcd/server.key --listen-client-urls=https://127.0.0.1:2379,https://10.0.2.15:2379 --listen-metrics-urls=http://127.0.0.1:2381 --listen-peer-urls=https://10.0.2.15:2380 --name=kubernetes --peer-cert-file=/etc/kubernetes/pki/etcd/peer.crt --peer-client-cert-auth=true --peer-key-file=/etc/kubernetes/pki/etcd/peer.key --peer-trusted-ca-file=/etc/kubernetes/pki/etcd/ca.crt --snapshot-count=10000 --trusted-ca-file=/etc/kubernetes/pki/etcd/ca.crt",
+        "remediation": "Edit the etcd pod specification file $etcdconf on the master\nnode and either remove the --peer-auto-tls parameter or set it to false.\n--peer-auto-tls=false",
+        "_source_file": "cis-1.11/etcd.yaml"
+    },
+    {
+        "check_id": 2.8,
+        "description": "Ensure that a unique Certificate Authority is used for etcd (Manual)",
+        "status": "PASS",
+        "reason": "Found ['--trusted-ca-file', 'ETCD_TRUSTED_CA_FILE']",
+        "audit_command": "/bin/ps -ef | /bin/grep etcd | /bin/grep -v grep",
+        "audit_output": "root        2675    2488  4 14:47 ?        00:16:35 kube-apiserver --advertise-address=10.0.2.15 --allow-privileged=true --authorization-mode=Node,RBAC --client-ca-file=/etc/kubernetes/pki/ca.crt --enable-admission-plugins=NodeRestriction --enable-bootstrap-token-auth=true --etcd-cafile=/etc/kubernetes/pki/etcd/ca.crt --etcd-certfile=/etc/kubernetes/pki/apiserver-etcd-client.crt --etcd-keyfile=/etc/kubernetes/pki/apiserver-etcd-client.key --etcd-servers=https://127.0.0.1:2379 --kubelet-client-certificate=/etc/kubernetes/pki/apiserver-kubelet-client.crt --kubelet-client-key=/etc/kubernetes/pki/apiserver-kubelet-client.key --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname --proxy-client-cert-file=/etc/kubernetes/pki/front-proxy-client.crt --proxy-client-key-file=/etc/kubernetes/pki/front-proxy-client.key --requestheader-allowed-names=front-proxy-client --requestheader-client-ca-file=/etc/kubernetes/pki/front-proxy-ca.crt --requestheader-extra-headers-prefix=X-Remote-Extra- --requestheader-group-headers=X-Remote-Group --requestheader-username-headers=X-Remote-User --secure-port=6443 --service-account-issuer=https://kubernetes.default.svc.cluster.local --service-account-key-file=/etc/kubernetes/pki/sa.pub --service-account-signing-key-file=/etc/kubernetes/pki/sa.key --service-cluster-ip-range=10.96.0.0/12 --tls-cert-file=/etc/kubernetes/pki/apiserver.crt --tls-private-key-file=/etc/kubernetes/pki/apiserver.key\nroot        2745    2486  2 14:47 ?        00:08:53 etcd --advertise-client-urls=https://10.0.2.15:2379 --cert-file=/etc/kubernetes/pki/etcd/server.crt --client-cert-auth=true --data-dir=/var/lib/etcd --experimental-initial-corrupt-check=true --experimental-watch-progress-notify-interval=5s --initial-advertise-peer-urls=https://10.0.2.15:2380 --initial-cluster=kubernetes=https://10.0.2.15:2380 --key-file=/etc/kubernetes/pki/etcd/server.key --listen-client-urls=https://127.0.0.1:2379,https://10.0.2.15:2379 --listen-metrics-urls=http://127.0.0.1:2381 --listen-peer-urls=https://10.0.2.15:2380 --name=kubernetes --peer-cert-file=/etc/kubernetes/pki/etcd/peer.crt --peer-client-cert-auth=true --peer-key-file=/etc/kubernetes/pki/etcd/peer.key --peer-trusted-ca-file=/etc/kubernetes/pki/etcd/ca.crt --snapshot-count=10000 --trusted-ca-file=/etc/kubernetes/pki/etcd/ca.crt",
+        "remediation": "[Manual test]\nFollow the etcd documentation and create a dedicated certificate authority setup for the\netcd service.\nThen, edit the etcd pod specification file $etcdconf on the\nmaster node and set the below parameter.\n--trusted-ca-file=</path/to/ca-file>",
+        "_source_file": "cis-1.11/etcd.yaml"
+    },
+    {
+        "check_id": "1.1.1",
+        "description": "Ensure that the API server pod specification file permissions are set to 600 or more restrictive (Automated)",
+        "status": "PASS",
+        "reason": "Permissions 0o600 \u2264 0o600",
+        "audit_command": "/bin/sh -c 'if test -e /etc/kubernetes/manifests/kube-apiserver.yaml; then stat -c permissions=%a /etc/kubernetes/manifests/kube-apiserver.yaml; fi'",
+        "audit_output": "permissions=600",
+        "remediation": "Run the below command (based on the file location on your system) on the\ncontrol plane node.\nFor example, chmod 600 /etc/kubernetes/manifests/kube-apiserver.yaml",
+        "_source_file": "cis-1.11/master_1.yaml"
+    },
+    {
+        "check_id": "1.1.2",
+        "description": "Ensure that the API server pod specification file ownership is set to root:root (Automated)",
+        "status": "PASS",
+        "reason": "Found ['root:root']",
+        "audit_command": "/bin/sh -c 'if test -e /etc/kubernetes/manifests/kube-apiserver.yaml; then stat -c %U:%G /etc/kubernetes/manifests/kube-apiserver.yaml; fi'",
+        "audit_output": "root:root",
+        "remediation": "Run the below command (based on the file location on your system) on the control plane node.\nFor example, chown root:root /etc/kubernetes/manifests/kube-apiserver.yaml",
+        "_source_file": "cis-1.11/master_1.yaml"
+    },
+    {
+        "check_id": "1.1.3",
+        "description": "Ensure that the controller manager pod specification file permissions are set to 600 or more restrictive (Automated)",
+        "status": "PASS",
+        "reason": "Permissions 0o600 \u2264 0o600",
+        "audit_command": "/bin/sh -c 'if test -e /etc/kubernetes/manifests/kube-controller-manager.yaml; then stat -c permissions=%a /etc/kubernetes/manifests/kube-controller-manager.yaml; fi'",
+        "audit_output": "permissions=600",
+        "remediation": "Run the below command (based on the file location on your system) on the control plane node.\nFor example, chmod 600 /etc/kubernetes/manifests/kube-controller-manager.yaml",
+        "_source_file": "cis-1.11/master_1.yaml"
+    },
+    {
+        "check_id": "1.1.4",
+        "description": "Ensure that the controller manager pod specification file ownership is set to root:root (Automated)",
+        "status": "PASS",
+        "reason": "Found ['root:root']",
+        "audit_command": "/bin/sh -c 'if test -e /etc/kubernetes/manifests/kube-controller-manager.yaml; then stat -c %U:%G /etc/kubernetes/manifests/kube-controller-manager.yaml; fi'",
+        "audit_output": "root:root",
+        "remediation": "Run the below command (based on the file location on your system) on the control plane node.\nFor example, chown root:root /etc/kubernetes/manifests/kube-controller-manager.yaml",
+        "_source_file": "cis-1.11/master_1.yaml"
+    },
+    {
+        "check_id": "1.1.5",
+        "description": "Ensure that the scheduler pod specification file permissions are set to 600 or more restrictive (Automated)",
+        "status": "PASS",
+        "reason": "Permissions 0o600 \u2264 0o600",
+        "audit_command": "/bin/sh -c 'if test -e /etc/kubernetes/manifests/kube-scheduler.yaml; then stat -c permissions=%a /etc/kubernetes/manifests/kube-scheduler.yaml; fi'",
+        "audit_output": "permissions=600",
+        "remediation": "Run the below command (based on the file location on your system) on the control plane node.\nFor example, chmod 600 /etc/kubernetes/manifests/kube-scheduler.yaml",
+        "_source_file": "cis-1.11/master_1.yaml"
+    },
+    {
+        "check_id": "1.1.6",
+        "description": "Ensure that the scheduler pod specification file ownership is set to root:root (Automated)",
+        "status": "PASS",
+        "reason": "Found ['root:root']",
+        "audit_command": "/bin/sh -c 'if test -e /etc/kubernetes/manifests/kube-scheduler.yaml; then stat -c %U:%G /etc/kubernetes/manifests/kube-scheduler.yaml; fi'",
+        "audit_output": "root:root",
+        "remediation": "Run the below command (based on the file location on your system) on the control plane node.\nFor example, chown root:root /etc/kubernetes/manifests/kube-scheduler.yaml",
+        "_source_file": "cis-1.11/master_1.yaml"
+    },
+    {
+        "check_id": "1.1.7",
+        "description": "Ensure that the etcd pod specification file permissions are set to 600 or more restrictive (Automated)",
+        "status": "PASS",
+        "reason": "Permissions 0o600 \u2264 0o600",
+        "audit_command": "/bin/sh -c 'if test -e /etc/kubernetes/manifests/etcd.yaml; then find /etc/kubernetes/manifests/etcd.yaml -name '*etcd*' | xargs stat -c permissions=%a; fi'",
+        "audit_output": "permissions=600",
+        "remediation": "Run the below command (based on the file location on your system) on the control plane node.\nFor example,\nchmod 600 /etc/kubernetes/manifests/etcd.yaml",
+        "_source_file": "cis-1.11/master_1.yaml"
+    },
+    {
+        "check_id": "1.1.8",
+        "description": "Ensure that the etcd pod specification file ownership is set to root:root (Automated)",
+        "status": "PASS",
+        "reason": "Found ['root:root']",
+        "audit_command": "/bin/sh -c 'if test -e /etc/kubernetes/manifests/etcd.yaml; then find /etc/kubernetes/manifests/etcd.yaml -name '*etcd*' | xargs stat -c %U:%G; fi'",
+        "audit_output": "root:root",
+        "remediation": "Run the below command (based on the file location on your system) on the control plane node.\nFor example,\nchown root:root /etc/kubernetes/manifests/etcd.yaml",
+        "_source_file": "cis-1.11/master_1.yaml"
+    },
+    {
+        "check_id": "1.1.9",
+        "description": "Ensure that the Container Network Interface file permissions are set to 600 or more restrictive (Manual)",
+        "status": "FAIL",
+        "reason": "One or more lines failed",
+        "audit_command": "ps -ef | grep kubelet | grep -- --cni-conf-dir | sed 's%.*cni-conf-dir[= ]\\([^ ]*\\).*%\\1%' | xargs -I{} find {} -mindepth 1 | xargs --no-run-if-empty stat -c permissions=%a\nfind /var/lib/cni/networks -type f 2> /dev/null | xargs --no-run-if-empty stat -c permissions=%a\nfind /etc/cni/net.d -type f 2> /dev/null | xargs --no-run-if-empty stat -c permissions=%a\n",
+        "audit_output": "permissions=750\npermissions=600\npermissions=600\npermissions=600\npermissions=644",
+        "line_results": [
+            {
+                "line": "permissions=750",
+                "status": "FAIL",
+                "reason": "Permissions 0o750 > expected 0o600"
+            },
+            {
+                "line": "permissions=600",
+                "status": "PASS",
+                "reason": "Permissions 0o600 \u2264 0o600"
+            },
+            {
+                "line": "permissions=600",
+                "status": "PASS",
+                "reason": "Permissions 0o600 \u2264 0o600"
+            },
+            {
+                "line": "permissions=600",
+                "status": "PASS",
+                "reason": "Permissions 0o600 \u2264 0o600"
+            },
+            {
+                "line": "permissions=644",
+                "status": "FAIL",
+                "reason": "Permissions 0o644 > expected 0o600"
+            }
+        ],
+        "remediation": "Run the below command (based on the file location on your system) on the control plane node.\nFor example, chmod 600 <path/to/cni/files>",
+        "_source_file": "cis-1.11/master_1.yaml"
+    },
+    {
+        "check_id": "1.1.10",
+        "description": "Ensure that the Container Network Interface file ownership is set to root:root (Manual)",
+        "status": "PASS",
+        "reason": "All lines passed",
+        "audit_command": "ps -ef | grep kubelet | grep -- --cni-conf-dir | sed 's%.*cni-conf-dir[= ]\\([^ ]*\\).*%\\1%' | xargs -I{} find {} -mindepth 1 | xargs --no-run-if-empty stat -c %U:%G\nfind /var/lib/cni/networks -type f 2> /dev/null | xargs --no-run-if-empty stat -c %U:%G\nfind /etc/cni/net.d -type f 2> /dev/null | xargs --no-run-if-empty stat -c %U:%G\n",
+        "audit_output": "root:root\nroot:root\nroot:root\nroot:root\nroot:root",
+        "line_results": [
+            {
+                "line": "root:root",
+                "status": "PASS",
+                "reason": "Found ['root:root']"
+            },
+            {
+                "line": "root:root",
+                "status": "PASS",
+                "reason": "Found ['root:root']"
+            },
+            {
+                "line": "root:root",
+                "status": "PASS",
+                "reason": "Found ['root:root']"
+            },
+            {
+                "line": "root:root",
+                "status": "PASS",
+                "reason": "Found ['root:root']"
+            },
+            {
+                "line": "root:root",
+                "status": "PASS",
+                "reason": "Found ['root:root']"
+            }
+        ],
+        "remediation": "Run the below command (based on the file location on your system) on the control plane node.\nFor example,\nchown root:root <path/to/cni/files>",
+        "_source_file": "cis-1.11/master_1.yaml"
+    },
+    {
+        "check_id": "1.1.11",
+        "description": "Ensure that the etcd data directory permissions are set to 700 or more restrictive (Automated)",
+        "status": "PASS",
+        "reason": "Permissions 0o700 \u2264 0o700",
+        "audit_command": "DATA_DIR=''\nfor d in $(ps -ef | grep etcd | grep -- --data-dir | sed 's%.*data-dir[= ]\\([^ ]*\\).*%\\1%'); do\n  if test -d \"$d\"; then DATA_DIR=\"$d\"; fi\ndone\nif ! test -d \"$DATA_DIR\"; then DATA_DIR=$etcddatadir; fi\nstat -c permissions=%a \"$DATA_DIR\"\n",
+        "audit_output": "permissions=700",
+        "remediation": "On the etcd server node, get the etcd data directory, passed as an argument --data-dir,\nfrom the command 'ps -ef | grep etcd'.\nRun the below command (based on the etcd data directory found above). For example,\nchmod 700 /var/lib/etcd",
+        "_source_file": "cis-1.11/master_1.yaml"
+    },
+    {
+        "check_id": "1.1.12",
+        "description": "Ensure that the etcd data directory ownership is set to etcd:etcd (Automated)",
+        "status": "FAIL",
+        "reason": "Did not find ['etcd:etcd']",
+        "audit_command": "DATA_DIR=''\nfor d in $(ps -ef | grep etcd | grep -- --data-dir | sed 's%.*data-dir[= ]\\([^ ]*\\).*%\\1%'); do\n  if test -d \"$d\"; then DATA_DIR=\"$d\"; fi\ndone\nif ! test -d \"$DATA_DIR\"; then DATA_DIR=$etcddatadir; fi\nstat -c %U:%G \"$DATA_DIR\"\n",
+        "audit_output": "root:root",
+        "remediation": "On the etcd server node, get the etcd data directory, passed as an argument --data-dir,\nfrom the command 'ps -ef | grep etcd'.\nRun the below command (based on the etcd data directory found above).\nFor example, chown etcd:etcd /var/lib/etcd",
+        "_source_file": "cis-1.11/master_1.yaml"
+    },
+    {
+        "check_id": "1.1.13",
+        "description": "Ensure that the default administrative credential file permissions are set to 600 (Automated)",
+        "status": "PASS",
+        "reason": "Permissions 0o600 \u2264 0o600",
+        "audit_command": "/bin/sh -c 'for adminconf in /etc/kubernetes/admin.conf /etc/kubernetes/super-admin.conf; do if [ -e \"$adminconf\" ]; then stat -c \"permissions=%a %n\" \"$adminconf\"; fi; done'\n",
+        "audit_output": "permissions=600 /etc/kubernetes/admin.conf\npermissions=600 /etc/kubernetes/super-admin.conf",
+        "remediation": "Run the below command (based on the file location on your system) on the control plane node.\nFor example, chmod 600 /etc/kubernetes/admin.conf\nOn Kubernetes 1.29+ the super-admin.conf file should also be modified, if present.\nFor example, chmod 600 /etc/kubernetes/super-admin.conf",
+        "_source_file": "cis-1.11/master_1.yaml"
+    },
+    {
+        "check_id": "1.1.14",
+        "description": "Ensure that the default administrative credential file ownership is set to root:root (Automated)",
+        "status": "PASS",
+        "reason": "All lines passed",
+        "audit_command": "/bin/sh -c 'for adminconf in /etc/kubernetes/admin.conf /etc/kubernetes/super-admin.conf; do if [ -e \"$adminconf\" ]; then stat -c \"ownership=%U:%G %n\" \"$adminconf\"; fi; done'\n",
+        "audit_output": "ownership=root:root /etc/kubernetes/admin.conf\nownership=root:root /etc/kubernetes/super-admin.conf",
+        "line_results": [
+            {
+                "line": "ownership=root:root /etc/kubernetes/admin.conf",
+                "status": "PASS",
+                "reason": "['ownership'] == root:root"
+            },
+            {
+                "line": "ownership=root:root /etc/kubernetes/super-admin.conf",
+                "status": "PASS",
+                "reason": "['ownership'] == root:root"
+            }
+        ],
+        "remediation": "Run the below command (based on the file location on your system) on the control plane node.\nFor example, chown root:root /etc/kubernetes/admin.conf\nOn Kubernetes 1.29+ the super-admin.conf file should also be modified, if present.\nFor example, chown root:root /etc/kubernetes/super-admin.conf",
+        "_source_file": "cis-1.11/master_1.yaml"
+    },
+    {
+        "check_id": "1.1.15",
+        "description": "Ensure that the scheduler.conf file permissions are set to 600 or more restrictive (Automated)",
+        "status": "PASS",
+        "reason": "Permissions 0o600 \u2264 0o600",
+        "audit_command": "/bin/sh -c 'if test -e /etc/kubernetes/scheduler.conf; then stat -c permissions=%a /etc/kubernetes/scheduler.conf; fi'",
+        "audit_output": "permissions=600",
+        "remediation": "Run the below command (based on the file location on your system) on the control plane node.\nFor example,\nchmod 600 /etc/kubernetes/scheduler.conf",
+        "_source_file": "cis-1.11/master_1.yaml"
+    },
+    {
+        "check_id": "1.1.16",
+        "description": "Ensure that the scheduler.conf file ownership is set to root:root (Automated)",
+        "status": "PASS",
+        "reason": "Found ['root:root']",
+        "audit_command": "/bin/sh -c 'if test -e /etc/kubernetes/scheduler.conf; then stat -c %U:%G /etc/kubernetes/scheduler.conf; fi'",
+        "audit_output": "root:root",
+        "remediation": "Run the below command (based on the file location on your system) on the control plane node.\nFor example,\nchown root:root /etc/kubernetes/scheduler.conf",
+        "_source_file": "cis-1.11/master_1.yaml"
+    },
+    {
+        "check_id": "1.1.17",
+        "description": "Ensure that the controller-manager.conf file permissions are set to 600 or more restrictive (Automated)",
+        "status": "PASS",
+        "reason": "Permissions 0o600 \u2264 0o600",
+        "audit_command": "/bin/sh -c 'if test -e /etc/kubernetes/controller-manager.conf; then stat -c permissions=%a /etc/kubernetes/controller-manager.conf; fi'",
+        "audit_output": "permissions=600",
+        "remediation": "Run the below command (based on the file location on your system) on the control plane node.\nFor example,\nchmod 600 /etc/kubernetes/controller-manager.conf",
+        "_source_file": "cis-1.11/master_1.yaml"
+    },
+    {
+        "check_id": "1.1.18",
+        "description": "Ensure that the controller-manager.conf file ownership is set to root:root (Automated)",
+        "status": "PASS",
+        "reason": "Found ['root:root']",
+        "audit_command": "/bin/sh -c 'if test -e /etc/kubernetes/controller-manager.conf; then stat -c %U:%G /etc/kubernetes/controller-manager.conf; fi'",
+        "audit_output": "root:root",
+        "remediation": "Run the below command (based on the file location on your system) on the control plane node.\nFor example,\nchown root:root /etc/kubernetes/controller-manager.conf",
+        "_source_file": "cis-1.11/master_1.yaml"
+    },
+    {
+        "check_id": "1.1.19",
+        "description": "Ensure that the Kubernetes PKI directory and file ownership is set to root:root (Automated)",
+        "status": "PASS",
+        "reason": "All lines passed",
+        "audit_command": "find /etc/kubernetes/pki/ | xargs stat -c %U:%G",
+        "audit_output": "root:root\nroot:root\nroot:root\nroot:root\nroot:root\nroot:root\nroot:root\nroot:root\nroot:root\nroot:root\nroot:root\nroot:root\nroot:root\nroot:root\nroot:root\nroot:root\nroot:root\nroot:root\nroot:root\nroot:root\nroot:root\nroot:root\nroot:root\nroot:root",
+        "line_results": [
+            {
+                "line": "root:root",
+                "status": "PASS",
+                "reason": "Found ['root:root']"
+            },
+            {
+                "line": "root:root",
+                "status": "PASS",
+                "reason": "Found ['root:root']"
+            },
+            {
+                "line": "root:root",
+                "status": "PASS",
+                "reason": "Found ['root:root']"
+            },
+            {
+                "line": "root:root",
+                "status": "PASS",
+                "reason": "Found ['root:root']"
+            },
+            {
+                "line": "root:root",
+                "status": "PASS",
+                "reason": "Found ['root:root']"
+            },
+            {
+                "line": "root:root",
+                "status": "PASS",
+                "reason": "Found ['root:root']"
+            },
+            {
+                "line": "root:root",
+                "status": "PASS",
+                "reason": "Found ['root:root']"
+            },
+            {
+                "line": "root:root",
+                "status": "PASS",
+                "reason": "Found ['root:root']"
+            },
+            {
+                "line": "root:root",
+                "status": "PASS",
+                "reason": "Found ['root:root']"
+            },
+            {
+                "line": "root:root",
+                "status": "PASS",
+                "reason": "Found ['root:root']"
+            },
+            {
+                "line": "root:root",
+                "status": "PASS",
+                "reason": "Found ['root:root']"
+            },
+            {
+                "line": "root:root",
+                "status": "PASS",
+                "reason": "Found ['root:root']"
+            },
+            {
+                "line": "root:root",
+                "status": "PASS",
+                "reason": "Found ['root:root']"
+            },
+            {
+                "line": "root:root",
+                "status": "PASS",
+                "reason": "Found ['root:root']"
+            },
+            {
+                "line": "root:root",
+                "status": "PASS",
+                "reason": "Found ['root:root']"
+            },
+            {
+                "line": "root:root",
+                "status": "PASS",
+                "reason": "Found ['root:root']"
+            },
+            {
+                "line": "root:root",
+                "status": "PASS",
+                "reason": "Found ['root:root']"
+            },
+            {
+                "line": "root:root",
+                "status": "PASS",
+                "reason": "Found ['root:root']"
+            },
+            {
+                "line": "root:root",
+                "status": "PASS",
+                "reason": "Found ['root:root']"
+            },
+            {
+                "line": "root:root",
+                "status": "PASS",
+                "reason": "Found ['root:root']"
+            },
+            {
+                "line": "root:root",
+                "status": "PASS",
+                "reason": "Found ['root:root']"
+            },
+            {
+                "line": "root:root",
+                "status": "PASS",
+                "reason": "Found ['root:root']"
+            },
+            {
+                "line": "root:root",
+                "status": "PASS",
+                "reason": "Found ['root:root']"
+            },
+            {
+                "line": "root:root",
+                "status": "PASS",
+                "reason": "Found ['root:root']"
+            }
+        ],
+        "remediation": "Run the below command (based on the file location on your system) on the control plane node.\nFor example,\nchown -R root:root /etc/kubernetes/pki/",
+        "_source_file": "cis-1.11/master_1.yaml"
+    },
+    {
+        "check_id": "1.1.20",
+        "description": "Ensure that the Kubernetes PKI certificate file permissions are set to 644 or more restrictive (Manual)",
+        "status": "PASS",
+        "reason": "All lines passed",
+        "audit_command": "find /etc/kubernetes/pki/ -name '*.crt' | xargs stat -c permissions=%a",
+        "audit_output": "permissions=644\npermissions=644\npermissions=644\npermissions=644\npermissions=644\npermissions=644\npermissions=644\npermissions=644\npermissions=644\npermissions=644",
+        "line_results": [
+            {
+                "line": "permissions=644",
+                "status": "PASS",
+                "reason": "Permissions 0o644 \u2264 0o644"
+            },
+            {
+                "line": "permissions=644",
+                "status": "PASS",
+                "reason": "Permissions 0o644 \u2264 0o644"
+            },
+            {
+                "line": "permissions=644",
+                "status": "PASS",
+                "reason": "Permissions 0o644 \u2264 0o644"
+            },
+            {
+                "line": "permissions=644",
+                "status": "PASS",
+                "reason": "Permissions 0o644 \u2264 0o644"
+            },
+            {
+                "line": "permissions=644",
+                "status": "PASS",
+                "reason": "Permissions 0o644 \u2264 0o644"
+            },
+            {
+                "line": "permissions=644",
+                "status": "PASS",
+                "reason": "Permissions 0o644 \u2264 0o644"
+            },
+            {
+                "line": "permissions=644",
+                "status": "PASS",
+                "reason": "Permissions 0o644 \u2264 0o644"
+            },
+            {
+                "line": "permissions=644",
+                "status": "PASS",
+                "reason": "Permissions 0o644 \u2264 0o644"
+            },
+            {
+                "line": "permissions=644",
+                "status": "PASS",
+                "reason": "Permissions 0o644 \u2264 0o644"
+            },
+            {
+                "line": "permissions=644",
+                "status": "PASS",
+                "reason": "Permissions 0o644 \u2264 0o644"
+            }
+        ],
+        "remediation": "Run the below command (based on the file location on your system) on the control plane node.\nFor example,\nchmod -R 644 /etc/kubernetes/pki/*.crt",
+        "_source_file": "cis-1.11/master_1.yaml"
+    },
+    {
+        "check_id": "1.1.21",
+        "description": "Ensure that the Kubernetes PKI key file permissions are set to 600 (Manual)",
+        "status": "PASS",
+        "reason": "All lines passed",
+        "audit_command": "find /etc/kubernetes/pki/ -name '*.key' | xargs stat -c permissions=%a",
+        "audit_output": "permissions=600\npermissions=600\npermissions=600\npermissions=600\npermissions=600\npermissions=600\npermissions=600\npermissions=600\npermissions=600\npermissions=600\npermissions=600",
+        "line_results": [
+            {
+                "line": "permissions=600",
+                "status": "PASS",
+                "reason": "Permissions 0o600 \u2264 0o600"
+            },
+            {
+                "line": "permissions=600",
+                "status": "PASS",
+                "reason": "Permissions 0o600 \u2264 0o600"
+            },
+            {
+                "line": "permissions=600",
+                "status": "PASS",
+                "reason": "Permissions 0o600 \u2264 0o600"
+            },
+            {
+                "line": "permissions=600",
+                "status": "PASS",
+                "reason": "Permissions 0o600 \u2264 0o600"
+            },
+            {
+                "line": "permissions=600",
+                "status": "PASS",
+                "reason": "Permissions 0o600 \u2264 0o600"
+            },
+            {
+                "line": "permissions=600",
+                "status": "PASS",
+                "reason": "Permissions 0o600 \u2264 0o600"
+            },
+            {
+                "line": "permissions=600",
+                "status": "PASS",
+                "reason": "Permissions 0o600 \u2264 0o600"
+            },
+            {
+                "line": "permissions=600",
+                "status": "PASS",
+                "reason": "Permissions 0o600 \u2264 0o600"
+            },
+            {
+                "line": "permissions=600",
+                "status": "PASS",
+                "reason": "Permissions 0o600 \u2264 0o600"
+            },
+            {
+                "line": "permissions=600",
+                "status": "PASS",
+                "reason": "Permissions 0o600 \u2264 0o600"
+            },
+            {
+                "line": "permissions=600",
+                "status": "PASS",
+                "reason": "Permissions 0o600 \u2264 0o600"
+            }
+        ],
+        "remediation": "Run the below command (based on the file location on your system) on the control plane node.\nFor example,\nchmod -R 600 /etc/kubernetes/pki/*.key",
+        "_source_file": "cis-1.11/master_1.yaml"
+    }
+]
