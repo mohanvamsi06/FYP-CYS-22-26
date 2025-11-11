@@ -1,8 +1,12 @@
 import os
+import re
 import yaml
 import json
 import subprocess
 import shutil
+import pwd
+import grp
+
 
 # ==============================
 # Helper functions
@@ -21,7 +25,8 @@ def run_command(command):
         return e.output.strip()
     except Exception as e:
         return f"Error: {e}"
-    
+
+
 def safe_run_command(command):
     """
     Run shell commands safely in minimal Kubernetes job environments.
@@ -43,7 +48,12 @@ def safe_run_command(command):
                         cmdline_path = os.path.join("/proc", pid, "cmdline")
                         try:
                             with open(cmdline_path, "rb") as f:
-                                cmdline = f.read().decode().replace("\x00", " ").strip()
+                                cmdline = (
+                                    f.read()
+                                    .decode(errors="ignore")
+                                    .replace("\x00", " ")
+                                    .strip()
+                                )
                                 if "kube-apiserver" in cmdline:
                                     processes.append(cmdline)
                         except (FileNotFoundError, PermissionError):
@@ -58,7 +68,6 @@ def safe_run_command(command):
     # --- Fallback 2: Missing 'stat' command (use Python os.stat) ---
     if command.strip().startswith("stat "):
         tokens = command.split()
-        # Look for a file path argument
         for t in tokens:
             if os.path.exists(t):
                 try:
@@ -104,37 +113,48 @@ def safe_run_command(command):
     except Exception as e:
         return f"Unexpected error executing command: {e}"
 
+
+# ==============================
+# Test evaluation logic
+# ==============================
+
 def evaluate_test(audit_output, tests_def):
     """
     Evaluate audit output against CIS test definitions.
     Supports:
     - bin_op (and/or) across multiple test_items
     - flag/env presence with 'set' true/false
-    - compare.op == 'bitmask', 'eq'
+    - compare.op in: 'bitmask', 'eq', 'has', 'nothave', 'gte', 'valid_elements'
     - simple string matching
     """
     if not audit_output:
         return "WARN", "No output from audit command, the recommendation might be manual"
 
     audit_output = str(audit_output)
-    test_items = tests_def.get("test_items", []) if isinstance(tests_def, dict) else tests_def
-    bin_op = (tests_def.get("bin_op") or "and").lower() if isinstance(tests_def, dict) else "and"
 
-    results = []  # store individual PASS/FAIL for combining
+    # tests_def can be either a dict {"bin_op": ..., "test_items": [...]} or just a list
+    if isinstance(tests_def, dict):
+        test_items = tests_def.get("test_items", []) or []
+        bin_op = (tests_def.get("bin_op") or "and").lower()
+    else:
+        test_items = tests_def or []
+        bin_op = "and"
 
-    for test in test_items or []:
+    results = []  # store individual PASS/FAIL/WARN entries
+
+    for test in test_items:
         flag = test.get("flag")
-        env = test.get("env")  # alternative key to check
+        env = test.get("env")  # optional alternative match string
         compare = test.get("compare") or {}
         op = compare.get("op")
         expected_value = compare.get("value")
 
         # Build possible match targets (flag or env variable)
-        match_targets = [t for t in [flag, env] if t]
+        match_targets = [t for t in (flag, env) if t]
 
-        # --- Handle 'set' checks ---
+        # --- Handle 'set' checks (presence/absence only) ---
         if "set" in test:
-            should_exist = test["set"]
+            should_exist = bool(test["set"])
             found_any = any(t in audit_output for t in match_targets)
 
             if should_exist and found_any:
@@ -149,6 +169,8 @@ def evaluate_test(audit_output, tests_def):
 
         # --- Compare block present ---
         if op:
+            op = str(op).lower()
+
             if op == "bitmask":
                 matched = False
                 for token in audit_output.split():
@@ -166,18 +188,89 @@ def evaluate_test(audit_output, tests_def):
                             continue
                 if not matched:
                     results.append(("WARN", "Could not parse permissions"))
+
             elif op == "eq":
-                # eq can match presence of a flag=value or env=value
-                matched = any(t in audit_output and str(expected_value) in audit_output for t in match_targets)
+                matched = any(
+                    t in audit_output and str(expected_value) in audit_output
+                    for t in match_targets
+                )
                 if matched:
                     results.append(("PASS", f"{match_targets} == {expected_value}"))
                 else:
                     results.append(("FAIL", f"{match_targets} != {expected_value}"))
+
+            elif op == "has":
+                # Flag/env should be present and its output should include expected_value
+                matched = any(
+                    t in audit_output and str(expected_value) in audit_output
+                    for t in match_targets
+                )
+                if matched:
+                    results.append(("PASS", f"{match_targets} contains {expected_value}"))
+                else:
+                    results.append(("FAIL", f"{match_targets} does not contain {expected_value}"))
+
+            elif op in ("nothave", "not_have"):
+                # Should not contain the forbidden value
+                value_present = str(expected_value) in audit_output if expected_value is not None else False
+                if value_present:
+                    results.append(("FAIL", f"{match_targets} should not contain {expected_value}"))
+                else:
+                    results.append(("PASS", f"{match_targets} does not contain {expected_value}"))
+
+            elif op == "gte":
+                # Example: --audit-log-maxsize=100
+                actual = None
+                for t in match_targets:
+                    if not t:
+                        continue
+                    m = re.search(rf"{re.escape(t)}[= ](\d+)", audit_output)
+                    if m:
+                        actual = int(m.group(1))
+                        break
+
+                try:
+                    expected_num = int(expected_value)
+                except Exception:
+                    results.append(("WARN", f"Invalid expected numeric value {expected_value}"))
+                    continue
+
+                if actual is None:
+                    results.append(("WARN", "Could not parse numeric value for comparison"))
+                elif actual >= expected_num:
+                    results.append(("PASS", f"{match_targets} >= {expected_num} (actual {actual})"))
+                else:
+                    results.append(("FAIL", f"{match_targets} < {expected_num} (actual {actual})"))
+
+            elif op == "valid_elements":
+                # Expected value is a comma-separated allow-list
+                allowed = {s.strip() for s in str(expected_value).split(",") if s.strip()}
+                actual_set = set()
+
+                for t in match_targets:
+                    if not t:
+                        continue
+                    m = re.search(rf"{re.escape(t)}=([A-Za-z0-9_@.\-+,]+)", audit_output)
+                    if m:
+                        actual_set.update(
+                            s.strip() for s in m.group(1).split(",") if s.strip()
+                        )
+
+                if not actual_set:
+                    results.append(("WARN", "Could not parse values for valid_elements"))
+                else:
+                    invalid = [c for c in actual_set if c not in allowed]
+                    if invalid:
+                        results.append(("FAIL", f"Found disallowed values: {', '.join(invalid)}"))
+                    else:
+                        results.append(("PASS", "All configured values are in the allowed list"))
+
             else:
                 results.append(("WARN", f"Unknown compare op {op}"))
-            continue
 
-        # --- Default simple presence match ---
+            continue  # done with this test item
+
+        # --- Default simple presence match (no compare block) ---
         found_any = any(t in audit_output for t in match_targets)
         if found_any:
             results.append(("PASS", f"Found {match_targets}"))
@@ -199,7 +292,6 @@ def evaluate_test(audit_output, tests_def):
         final_status = "WARN"
 
     return final_status, reasons
-
 
 
 # ==============================
@@ -235,10 +327,10 @@ def process_cis_yaml(yaml_path):
             audit_cmd = check.get("audit")
             check_type = check.get("type")
             remediation = (check.get("remediation") or "").strip()
-            tests = check.get("tests", {}).get("test_items", [])
+            tests = check.get("tests", {})  # pass full tests dict (bin_op + test_items)
             use_multiple = check.get("use_multiple_values", False)
 
-            if check_type=="manual":
+            if check_type == "manual":
                 results.append({
                     "check_id": check_id,
                     "description": description,
@@ -247,7 +339,7 @@ def process_cis_yaml(yaml_path):
                     "remediation": remediation
                 })
                 continue
-            
+
             audit_output = safe_run_command(audit_cmd)
 
             if use_multiple:
@@ -348,7 +440,7 @@ def main():
 
     with open(output_file, "w") as f:
         json.dump(all_results, f, indent=4)
-        f.write("\n") 
+        f.write("\n")
 
     print(json.dumps(all_results, indent=4) + "\n")
 

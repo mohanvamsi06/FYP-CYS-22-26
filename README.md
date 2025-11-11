@@ -7,3 +7,5 @@ Sections in CIS Framework that have been covered
 - 1.1
 - 2
 - 3
+
+- 1.2
