@@ -236,7 +236,7 @@ def evaluate_test(audit_output, tests_def):
                     continue
 
                 if actual is None:
-                    results.append(("WARN", "Could not parse numeric value for comparison"))
+                    results.append(("FAIL", "Could not parse numeric value for comparison or Target not found"))
                 elif actual >= expected_num:
                     results.append(("PASS", f"{match_targets} >= {expected_num} (actual {actual})"))
                 else:
