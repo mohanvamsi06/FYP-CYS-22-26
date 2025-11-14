@@ -1,46 +1,85 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: audit-runner
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: audit-runner-impersonate
+rules:
+  - apiGroups: [""]  
+    resources: ["users", "groups", "serviceaccounts"]
+    verbs: ["impersonate"]
+  - apiGroups: ["authorization.k8s.io"]
+    resources: ["selfsubjectaccessreviews", "selfsubjectrulesreviews"]
+    verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: audit-runner-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+  - kind: ServiceAccount
+    name: audit-runner
+    namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: audit-runner-impersonate-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: audit-runner-impersonate
+subjects:
+  - kind: ServiceAccount
+    name: audit-runner
+    namespace: default
+---
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: v1
+  name: cis-k8s-audit
 spec:
   template:
     spec:
       hostPID: true
       hostNetwork: true
-      containers:
-      - name: check
-        image: mohanvamsi06/fyp:v0.0.1
-        imagePullPolicy: Always
-        volumeMounts:
-        - name: kubernetes
-          mountPath: /etc/kubernetes
-          readOnly: true
-        - name: cni
-          mountPath: /etc/cni/net.d
-          readOnly: true
-        - name: lib-cni
-          mountPath: /var/lib/cni
-          readOnly: true          
-        - name: etcd
-          mountPath: /var/lib/etcd
-          readOnly: true
-        - name: output
-          mountPath: /output
+      serviceAccountName: audit-runner
       restartPolicy: Never
+      containers:
+        - name: check
+          image: mohanvamsi06/fyp:v0.0.1
+          imagePullPolicy: Always
+          volumeMounts:
+            - name: kubernetes
+              mountPath: /etc/kubernetes
+              readOnly: true
+            - name: cni
+              mountPath: /etc/cni/net.d
+              readOnly: true
+            - name: etcd
+              mountPath: /var/lib/etcd
+              readOnly: true
+            - name: output
+              mountPath: /output
       volumes:
-      - name: kubernetes
-        hostPath:
-          path: /etc/kubernetes
-      - name: cni
-        hostPath: 
-          path: /etc/cni/net.d
-      - name: lib-cni
-        hostPath: 
-          path: /var/lib/cni
-      - name: etcd
-        hostPath:
-          path: /var/lib/etcd
-      - name: output
-        hostPath:
-          path: /var/tmp/results
-          type: DirectoryOrCreate
+        - name: kubernetes
+          hostPath:
+            path: /etc/kubernetes
+        - name: cni
+          hostPath:
+            path: /etc/cni/net.d
+        - name: etcd
+          hostPath:
+            path: /var/lib/etcd
+        - name: output
+          hostPath:
+            path: /var/tmp/results
+            type: DirectoryOrCreate

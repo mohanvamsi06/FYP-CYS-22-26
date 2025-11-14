@@ -119,20 +119,11 @@ def safe_run_command(command):
 # ==============================
 
 def evaluate_test(audit_output, tests_def):
-    """
-    Evaluate audit output against CIS test definitions.
-    Supports:
-    - bin_op (and/or) across multiple test_items
-    - flag/env presence with 'set' true/false
-    - compare.op in: 'bitmask', 'eq', 'has', 'nothave', 'gte', 'valid_elements'
-    - simple string matching
-    """
     if not audit_output:
         return "WARN", "No output from audit command, the recommendation might be manual"
 
     audit_output = str(audit_output)
 
-    # tests_def can be either a dict {"bin_op": ..., "test_items": [...]} or just a list
     if isinstance(tests_def, dict):
         test_items = tests_def.get("test_items", []) or []
         bin_op = (tests_def.get("bin_op") or "and").lower()
@@ -140,19 +131,17 @@ def evaluate_test(audit_output, tests_def):
         test_items = tests_def or []
         bin_op = "and"
 
-    results = []  # store individual PASS/FAIL/WARN entries
-
+    results = []  
+    
     for test in test_items:
         flag = test.get("flag")
-        env = test.get("env")  # optional alternative match string
+        env = test.get("env") 
         compare = test.get("compare") or {}
         op = compare.get("op")
         expected_value = compare.get("value")
 
-        # Build possible match targets (flag or env variable)
         match_targets = [t for t in (flag, env) if t]
 
-        # --- Handle 'set' checks (presence/absence only) ---
         if "set" in test:
             should_exist = bool(test["set"])
             found_any = any(t in audit_output for t in match_targets)
@@ -167,7 +156,6 @@ def evaluate_test(audit_output, tests_def):
                 results.append(("PASS", f"{match_targets} correctly unset"))
             continue
 
-        # --- Compare block present ---
         if op:
             op = str(op).lower()
 
@@ -200,7 +188,6 @@ def evaluate_test(audit_output, tests_def):
                     results.append(("FAIL", f"{match_targets} != {expected_value}"))
 
             elif op == "has":
-                # Flag/env should be present and its output should include expected_value
                 matched = any(
                     t in audit_output and str(expected_value) in audit_output
                     for t in match_targets
@@ -211,7 +198,6 @@ def evaluate_test(audit_output, tests_def):
                     results.append(("FAIL", f"{match_targets} does not contain {expected_value}"))
 
             elif op in ("nothave", "not_have"):
-                # Should not contain the forbidden value
                 value_present = str(expected_value) in audit_output if expected_value is not None else False
                 if value_present:
                     results.append(("FAIL", f"{match_targets} should not contain {expected_value}"))
@@ -219,7 +205,6 @@ def evaluate_test(audit_output, tests_def):
                     results.append(("PASS", f"{match_targets} does not contain {expected_value}"))
 
             elif op == "gte":
-                # Example: --audit-log-maxsize=100
                 actual = None
                 for t in match_targets:
                     if not t:
@@ -243,7 +228,6 @@ def evaluate_test(audit_output, tests_def):
                     results.append(("FAIL", f"{match_targets} < {expected_num} (actual {actual})"))
 
             elif op == "valid_elements":
-                # Expected value is a comma-separated allow-list
                 allowed = {s.strip() for s in str(expected_value).split(",") if s.strip()}
                 actual_set = set()
 
@@ -268,16 +252,14 @@ def evaluate_test(audit_output, tests_def):
             else:
                 results.append(("WARN", f"Unknown compare op {op}"))
 
-            continue  # done with this test item
+            continue
 
-        # --- Default simple presence match (no compare block) ---
         found_any = any(t in audit_output for t in match_targets)
         if found_any:
             results.append(("PASS", f"Found {match_targets}"))
         else:
             results.append(("FAIL", f"Did not find {match_targets}"))
 
-    # Combine results based on bin_op
     statuses = [r[0] for r in results if r[0] != "WARN"]
     reasons = "; ".join([r[1] for r in results])
 
@@ -327,7 +309,7 @@ def process_cis_yaml(yaml_path):
             audit_cmd = check.get("audit")
             check_type = check.get("type")
             remediation = (check.get("remediation") or "").strip()
-            tests = check.get("tests", {})  # pass full tests dict (bin_op + test_items)
+            tests = check.get("tests", {}) 
             use_multiple = check.get("use_multiple_values", False)
 
             if check_type == "manual":
