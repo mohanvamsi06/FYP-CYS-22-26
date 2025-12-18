@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: worker-audit
+spec:
+  selector:
+    matchLabels:
+      app: worker-audit
+  template:
+    metadata:
+      labels:
+        app: worker-audit
+    spec:
+      hostPID: true
+      hostNetwork: true
+      serviceAccountName: audit-runner
+
+      containers:
+      - name: check
+        image: mohanvamsi06/fyp:worker_node
+        command:
+          - sh
+          - -c
+          - |
+            python main.py
+            sleep infinity
+        imagePullPolicy: Always
+        volumeMounts:
+        - name: kubernetes
+          mountPath: /etc/kubernetes
+          readOnly: true
+        - name: kubelet
+          mountPath: /var/lib/kubelet
+          readOnly: true
+        - name: kube-proxy
+          mountPath: /var/lib/kube-proxy
+          readOnly: true
+        - name: kubeadm-conf
+          mountPath: /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+          readOnly: true
+        - name: output
+          mountPath: /output
+
+      volumes:
+      - name: kubernetes
+        hostPath:
+          path: /etc/kubernetes
+      - name: kubelet
+        hostPath:
+          path: /var/lib/kubelet
+      - name: kube-proxy
+        hostPath:
+          path: /var/lib/kube-proxy
+      - name: kubeadm-conf
+        hostPath:
+          path: /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+      - name: output
+        hostPath:
+          path: /var/tmp/results
+          type: DirectoryOrCreate

@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="margin-bottom:12px;display:flex;align-items:center;gap:12px;">
+  <button id="run-scan-btn"
+          style="padding:8px 14px;border-radius:8px;border:1px solid #e5e7eb;background:#0f172a;color:white;cursor:pointer;">
+    Run Compliance Scan
+  </button>
+  <span id="scan-status" style="color:#555;font-size:14px;"></span>
+</div>
+<div class="cards">
+  <div class="card">
+    <h3>Total Checks</h3>
+    <p id="total-checks">—</p>
+  </div>
+  <div class="card">
+    <h3>Pass</h3>
+    <p id="count-pass">—</p>
+  </div>
+  <div class="card">
+    <h3>Fail</h3>
+    <p id="count-fail">—</p>
+  </div>
+  <div class="card">
+    <h3>Warn</h3>
+    <p id="count-warn">—</p>
+  </div>
+</div>
+
+<div class="panels" style="margin-top:12px;">
+  <div class="panel" style="min-width:360px;">
+    <h3>Status Distribution (summary)</h3>
+    <div id="status-summary" style="padding:12px;background:#fff;border-radius:8px;box-shadow:0 1px 2px rgba(0,0,0,0.04);">
+      <!-- Simple text summary will be injected here -->
+      <div id="status-summary-text">Loading…</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Top Failed Checks</h3>
+    <div id="top-failed" style="display:flex;flex-direction:column;gap:8px;max-height:360px;overflow:auto;"></div>
+  </div>
+</div>
+
+<div class="panel" style="margin-top:12px;">
+  <h3>Per-source-file breakdown</h3>
+  <div style="overflow:auto">
+    <table id="per-file-table" style="width:100%;border-collapse:collapse">
+      <thead>
+        <tr>
+          <th style="text-align:left;padding:6px">Source file</th>
+          <th style="padding:6px">PASS</th>
+          <th style="padding:6px">FAIL</th>
+          <th style="padding:6px">WARN</th>
+          <th style="padding:6px">UNKNOWN</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="raw" style="margin-top:12px;">
+  <h3>Raw processed JSON (preview)</h3>
+  <pre id="rawjson">Loading…</pre>
+</div>
+{% endblock %}

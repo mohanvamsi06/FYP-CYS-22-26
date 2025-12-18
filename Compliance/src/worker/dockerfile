@@ -1,0 +1,20 @@
+FROM python:3.12-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    procps coreutils findutils grep curl ca-certificates jq \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN K8S_VERSION=$(curl -L -s https://dl.k8s.io/release/stable.txt) && \
+    curl -LO "https://dl.k8s.io/release/${K8S_VERSION}/bin/linux/amd64/kubectl" && \
+    install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl && \
+    rm kubectl
+
+WORKDIR /app
+
+COPY main.py .
+COPY requirements.txt .
+COPY cis-1.11 ./cis-1.11
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+CMD ["python3", "main.py"]

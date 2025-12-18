@@ -45,40 +45,28 @@ subjects:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: cis-k8s-audit
+  name: cis-k8s-dashboard
 spec:
   template:
     spec:
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: ""
+      tolerations:
+      - key: "node-role.kubernetes.io/control-plane"
+        operator: "Exists"
+        effect: "NoSchedule"
       hostPID: true
       hostNetwork: true
       serviceAccountName: audit-runner
       restartPolicy: Never
       containers:
-        - name: check
-          image: mohanvamsi06/fyp:v0.0.1
+        - name: dashboard
+          image: mohanvamsi06/fyp:v0.0.1 
           imagePullPolicy: Always
           volumeMounts:
-            - name: kubernetes
-              mountPath: /etc/kubernetes
-              readOnly: true
-            - name: cni
-              mountPath: /etc/cni/net.d
-              readOnly: true
-            - name: etcd
-              mountPath: /var/lib/etcd
-              readOnly: true
             - name: output
               mountPath: /output
       volumes:
-        - name: kubernetes
-          hostPath:
-            path: /etc/kubernetes
-        - name: cni
-          hostPath:
-            path: /etc/cni/net.d
-        - name: etcd
-          hostPath:
-            path: /var/lib/etcd
         - name: output
           hostPath:
             path: /var/tmp/results

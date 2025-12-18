@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Compliance Dashboard</title>
+<link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+<div class="app">
+<aside class="sidebar">
+<div class="brand">Secure k8s</div>
+<nav>
+<a href="/compliance" class="nav-link active">Compliance</a>
+<!-- Add other links here -->
+</nav>
+</aside>
+
+
+<main class="main">
+<header class="topbar">
+<h1>Compliance Dashboard</h1>
+</header>
+
+
+<section class="content">
+<!-- Page content will be injected here by each template -->
+{% block content %}{% endblock %}
+</section>
+</main>
+</div>
+
+
+<script src="/static/app.js"></script>
+</body>
+</html>
