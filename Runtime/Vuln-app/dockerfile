@@ -1,0 +1,8 @@
+FROM alpine:3.19
+
+RUN apk add --no-cache bash netcat-openbsd curl
+
+COPY app.sh /app.sh
+RUN chmod +x /app.sh
+
+ENTRYPOINT ["/app.sh"]

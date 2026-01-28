@@ -1,0 +1,11 @@
+apiVersion: cilium.io/v1alpha1
+kind: TracingPolicy
+metadata:
+  name: dos-connect-detect
+spec:
+  tracepoints:
+  - subsystem: syscalls
+    event: sys_enter_connect
+    selectors:
+    - matchActions:
+      - action: Post

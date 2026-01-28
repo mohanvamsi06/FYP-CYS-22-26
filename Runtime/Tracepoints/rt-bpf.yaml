@@ -1,0 +1,10 @@
+apiVersion: cilium.io/v1alpha1
+kind: TracingPolicy
+metadata:
+  name: rt-bpf-09
+spec:
+  kprobes:
+  - call: bpf
+    syscall: true
+    matchActions:
+    - action: Post

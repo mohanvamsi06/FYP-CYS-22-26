@@ -1,0 +1,47 @@
+apiVersion: cilium.io/v1alpha1
+kind: TracingPolicy
+metadata:
+  name: enforce-priv-escape
+  annotations:
+    description: >
+      Enforce SIGKILL on privilege escalation and container escape attempts
+      using portable syscall tracepoints.
+
+spec:
+  tracepoints:
+
+  ########################################
+  # Privilege escalation (SIGKILL)
+  ########################################
+
+  - subsystem: syscalls
+    event: sys_enter_setuid
+    selectors:
+    - matchActions:
+      - action: Post
+      - action: Sigkill
+
+  - subsystem: syscalls
+    event: sys_enter_capset
+    selectors:
+    - matchActions:
+      - action: Post
+      - action: Sigkill
+
+  ########################################
+  # Container escape attempts (SIGKILL)
+  ########################################
+
+  - subsystem: syscalls
+    event: sys_enter_unshare
+    selectors:
+    - matchActions:
+      - action: Post
+      - action: Sigkill
+
+  - subsystem: syscalls
+    event: sys_enter_mount
+    selectors:
+    - matchActions:
+      - action: Post
+      - action: Sigkill

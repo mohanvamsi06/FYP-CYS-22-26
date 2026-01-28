@@ -1,0 +1,10 @@
+apiVersion: cilium.io/v1alpha1
+kind: TracingPolicy
+metadata:
+  name: rt-execve-01
+spec:
+  kprobes:
+  - call: execve
+    syscall: true
+    matchActions:
+    - action: Post

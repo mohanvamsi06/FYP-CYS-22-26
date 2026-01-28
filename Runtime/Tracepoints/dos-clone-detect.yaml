@@ -1,0 +1,11 @@
+apiVersion: cilium.io/v1alpha1
+kind: TracingPolicy
+metadata:
+  name: dos-clone-detect
+spec:
+  tracepoints:
+  - subsystem: syscalls
+    event: sys_enter_clone
+    selectors:
+    - matchActions:
+      - action: Post

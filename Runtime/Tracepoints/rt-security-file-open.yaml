@@ -1,0 +1,10 @@
+apiVersion: cilium.io/v1alpha1
+kind: TracingPolicy
+metadata:
+  name: rt-security-file-open-15
+spec:
+  kprobes:
+  - call: security_file_open
+    syscall: true
+    matchActions:
+    - action: Post

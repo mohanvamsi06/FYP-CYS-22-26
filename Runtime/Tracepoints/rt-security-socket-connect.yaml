@@ -1,0 +1,10 @@
+apiVersion: cilium.io/v1alpha1
+kind: TracingPolicy
+metadata:
+  name: rt-security-socket-connect-17
+spec:
+  kprobes:
+  - call: security_socket_connect
+    syscall: true
+    matchActions:
+    - action: Post

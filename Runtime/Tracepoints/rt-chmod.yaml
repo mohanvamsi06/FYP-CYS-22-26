@@ -1,0 +1,10 @@
+apiVersion: cilium.io/v1alpha1
+kind: TracingPolicy
+metadata:
+  name: rt-chmod-12
+spec:
+  kprobes:
+  - call: chmod
+    syscall: true
+    matchActions:
+    - action: Post

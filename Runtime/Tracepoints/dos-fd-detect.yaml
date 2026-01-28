@@ -1,0 +1,11 @@
+apiVersion: cilium.io/v1alpha1
+kind: TracingPolicy
+metadata:
+  name: dos-fd-detect
+spec:
+  kprobes:
+  - call: fd_install
+    syscall: false
+    selectors:
+    - matchActions:
+      - action: Post

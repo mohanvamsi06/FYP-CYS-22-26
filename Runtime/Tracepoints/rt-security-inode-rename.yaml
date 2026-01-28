@@ -1,0 +1,10 @@
+apiVersion: cilium.io/v1alpha1
+kind: TracingPolicy
+metadata:
+  name: rt-security-inode-rename-18
+spec:
+  kprobes:
+  - call: security_inode_rename
+    syscall: true
+    matchActions:
+    - action: Post
