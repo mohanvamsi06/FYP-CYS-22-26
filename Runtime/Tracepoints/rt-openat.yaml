@@ -1,10 +1,21 @@
 apiVersion: cilium.io/v1alpha1
 kind: TracingPolicy
 metadata:
-  name: rt-openat-14
+  name: "file-open-monitoring"
 spec:
   kprobes:
-  - call: openat
-    syscall: true
-    matchActions:
-    - action: Post
+  - call: "security_file_open"
+    syscall: false
+    args:
+    - index: 0
+      type: "file"
+    selectors:
+    # Only monitor sensitive files
+    - matchArgs:
+      - index: 0
+        operator: "Prefix"
+        values:
+        - "/etc/shadow"
+        - "/etc/passwd"
+        - "/root/.ssh/"
+        - "/home/*/.ssh/"
