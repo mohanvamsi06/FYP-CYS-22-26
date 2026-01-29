@@ -1,10 +1,25 @@
 apiVersion: cilium.io/v1alpha1
 kind: TracingPolicy
 metadata:
-  name: rt-init-module-07
+  name: "kernel-module-loading-portable"
 spec:
-  kprobes:
-  - call: init_module
-    syscall: true
-    matchActions:
-    - action: Post
+  tracepoints:
+  - subsystem: "syscalls"
+    event: "sys_enter_init_module"
+    args:
+    - index: 0
+      type: "unsigned long"
+    - index: 1
+      type: "unsigned long"
+    - index: 2
+      type: "string"
+  
+  - subsystem: "syscalls"
+    event: "sys_enter_finit_module"
+    args:
+    - index: 0
+      type: "int"
+    - index: 1
+      type: "string"
+    - index: 2
+      type: "int"
