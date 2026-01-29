@@ -1,10 +1,48 @@
 apiVersion: cilium.io/v1alpha1
 kind: TracingPolicy
 metadata:
-  name: rt-chown-13
+  name: "chown-monitoring"
 spec:
-  kprobes:
-  - call: chown
-    syscall: true
-    matchActions:
-    - action: Post
+  tracepoints:
+  - subsystem: "syscalls"
+    event: "sys_enter_chown"
+    args:
+    - index: 0
+      type: "string"     # Filename
+    - index: 1
+      type: "int"        # UID
+    - index: 2
+      type: "int"        # GID
+    selectors:
+    # Alert on chown in suspicious locations or critical files
+    - matchArgs:
+      - index: 0
+        operator: "Prefix"
+        values:
+        - "/tmp/"
+        - "/dev/shm/"
+        - "/etc/"
+        - "/bin/"
+        - "/sbin/"
+  
+  - subsystem: "syscalls"
+    event: "sys_enter_fchownat"
+    args:
+    - index: 0
+      type: "int"        # Directory FD
+    - index: 1
+      type: "string"     # Filename
+    - index: 2
+      type: "int"        # UID
+    - index: 3
+      type: "int"        # GID
+    selectors:
+    - matchArgs:
+      - index: 1
+        operator: "Prefix"
+        values:
+        - "/tmp/"
+        - "/dev/shm/"
+        - "/etc/"
+        - "/bin/"
+        - "/sbin/"
