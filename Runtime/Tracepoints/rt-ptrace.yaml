@@ -1,10 +1,27 @@
 apiVersion: cilium.io/v1alpha1
 kind: TracingPolicy
 metadata:
-  name: rt-ptrace-10
+  name: "ptrace-monitoring"
 spec:
-  kprobes:
-  - call: ptrace
-    syscall: true
-    matchActions:
-    - action: Post
+  tracepoints:
+  - subsystem: "syscalls"
+    event: "sys_enter_ptrace"
+    args:
+    - index: 0
+      type: "long"      # Request type (ATTACH, PEEKDATA, etc.)
+    - index: 1
+      type: "long"      # Target PID
+    - index: 2
+      type: "unsigned long"  # Address
+    - index: 3
+      type: "unsigned long"  # Data
+    selectors:
+    # Exclude legitimate debuggers
+    - matchBinaries:
+      - operator: "NotIn"
+        values:
+        - "/usr/bin/gdb"
+        - "/usr/bin/strace"
+        - "/usr/bin/ltrace"
+        - "/usr/bin/lldb"
+        - "/snap/bin/strace"
