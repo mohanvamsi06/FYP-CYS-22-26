@@ -6,11 +6,29 @@ import time
 
 
 app = Flask(__name__)
-JSON_PATH = os.environ.get('RESULT_JSON_PATH', '/var/tmp/results/results.json')
-RESULTS_PATH = "/var/tmp/results/results.json"
-RUNTIME_LOGS_PATH = "/var/tmp/results/runtime_alerts.json"
+JSON_PATH = os.environ.get('RESULT_JSON_PATH', '/output/results.json')
+RESULTS_PATH = "/output/results.json"
+RUNTIME_LOGS_PATH = "/output/runtime_alerts.json"
 JOB_NAME = "cis-k8s-audit"
 NAMESPACE = "default"
+
+# Configurable filter for runtime alerts
+# Add binaries to exclude from alerts (noise from monitoring tools)
+EXCLUDED_BINARIES = os.environ.get('EXCLUDED_BINARIES', 
+    'kubectl,jq,grep,bash,sh,chmod,touch,echo,cat,head,tail,sed,awk,curl,wget'
+).split(',')
+
+# Event types to include (empty = include all)
+# Options: 'process_exec', 'process_tracepoint', 'process_kprobe', 'process_exit'
+INCLUDED_EVENT_TYPES = os.environ.get('INCLUDED_EVENT_TYPES', 
+    'process_tracepoint'
+).split(',') if os.environ.get('INCLUDED_EVENT_TYPES') else []
+
+# Subsystems to include (empty = include all)
+# For tracepoints: 'syscalls', 'raw_syscalls', etc.
+INCLUDED_SUBSYSTEMS = os.environ.get('INCLUDED_SUBSYSTEMS', 
+    'syscalls'
+).split(',') if os.environ.get('INCLUDED_SUBSYSTEMS') else []
 
 # Compliance job YAML template
 COMPLIANCE_JOB_YAML = """
@@ -241,6 +259,49 @@ def serve_result():
         return send_from_directory(os.path.dirname(os.path.abspath(JSON_PATH)) or '.', os.path.basename(JSON_PATH))
     return ("Not found", 404)
 
+def should_include_alert(alert):
+    """
+    Determine if an alert should be included based on filters.
+    Returns True if alert should be shown, False otherwise.
+    """
+    # Check event type
+    event_type = None
+    if 'process_tracepoint' in alert:
+        event_type = 'process_tracepoint'
+        process_data = alert['process_tracepoint'].get('process', {})
+        subsys = alert['process_tracepoint'].get('subsys', '')
+    elif 'process_exec' in alert:
+        event_type = 'process_exec'
+        process_data = alert['process_exec'].get('process', {})
+        subsys = None
+    elif 'process_kprobe' in alert:
+        event_type = 'process_kprobe'
+        process_data = alert['process_kprobe'].get('process', {})
+        subsys = None
+    elif 'process_exit' in alert:
+        event_type = 'process_exit'
+        process_data = alert['process_exit'].get('process', {})
+        subsys = None
+    else:
+        return False
+    
+    # Filter by event type if specified
+    if INCLUDED_EVENT_TYPES and event_type not in INCLUDED_EVENT_TYPES:
+        return False
+    
+    # Filter by subsystem if specified (for tracepoints)
+    if INCLUDED_SUBSYSTEMS and subsys and subsys not in INCLUDED_SUBSYSTEMS:
+        return False
+    
+    # Get binary name
+    binary = process_data.get('binary', '')
+    
+    # Exclude noise from monitoring tools
+    if any(excluded in binary for excluded in EXCLUDED_BINARIES):
+        return False
+    
+    return True
+
 @app.route('/api/runtime/alerts')
 def runtime_alerts():
     """Fetch runtime security alerts from Tetragon logs"""
@@ -256,7 +317,11 @@ def runtime_alerts():
                     continue
                 try:
                     alert = json.loads(line)
-                    alerts.append(alert)
+                    
+                    # Apply filters
+                    if should_include_alert(alert):
+                        alerts.append(alert)
+                        
                 except json.JSONDecodeError:
                     continue
             
@@ -289,7 +354,11 @@ def runtime_stats():
                     continue
                 try:
                     alert = json.loads(line)
-                    alerts.append(alert)
+                    
+                    # Apply filters
+                    if should_include_alert(alert):
+                        alerts.append(alert)
+                        
                 except json.JSONDecodeError:
                     continue
         
@@ -300,20 +369,16 @@ def runtime_stats():
         by_severity = Counter()
         
         for alert in alerts:
-            # Extract event type
-            process_exec = alert.get('process_exec', {})
-            process_kprobe = alert.get('process_kprobe', {})
-            process_tracepoint = alert.get('process_tracepoint', {})
-            
-            if process_exec:
+            # Extract event info based on type
+            if 'process_tracepoint' in alert:
+                event_type = alert['process_tracepoint'].get('event', 'unknown')
+                process_name = alert['process_tracepoint'].get('process', {}).get('binary', 'unknown')
+            elif 'process_exec' in alert:
                 event_type = 'execve'
-                process_name = process_exec.get('process', {}).get('binary', 'unknown')
-            elif process_kprobe:
-                event_type = process_kprobe.get('function_name', 'kprobe')
-                process_name = process_kprobe.get('process', {}).get('binary', 'unknown')
-            elif process_tracepoint:
-                event_type = process_tracepoint.get('subsys', 'tracepoint')
-                process_name = process_tracepoint.get('process', {}).get('binary', 'unknown')
+                process_name = alert['process_exec'].get('process', {}).get('binary', 'unknown')
+            elif 'process_kprobe' in alert:
+                event_type = alert['process_kprobe'].get('function_name', 'kprobe')
+                process_name = alert['process_kprobe'].get('process', {}).get('binary', 'unknown')
             else:
                 event_type = 'unknown'
                 process_name = 'unknown'
@@ -322,11 +387,12 @@ def runtime_stats():
             by_process[process_name] += 1
             
             # Determine severity based on event type
-            if 'sigkill' in event_type.lower() or 'setuid' in event_type.lower() or 'capset' in event_type.lower():
+            event_lower = event_type.lower()
+            if any(x in event_lower for x in ['setuid', 'capset', 'sigkill', 'unshare', 'mount']):
                 by_severity['critical'] += 1
-            elif 'dos' in event_type.lower() or 'bind' in event_type.lower():
+            elif any(x in event_lower for x in ['clone', 'accept', 'connect', 'bind']):
                 by_severity['high'] += 1
-            elif 'execve' in event_type.lower() or 'ptrace' in event_type.lower():
+            elif any(x in event_lower for x in ['execve', 'ptrace', 'chmod', 'chown']):
                 by_severity['medium'] += 1
             else:
                 by_severity['low'] += 1
