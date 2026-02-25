@@ -114,8 +114,8 @@ https://raw.githubusercontent.com/mohanvamsi06/FYP-CYS-22-26/main/Runtime/Tracep
 wget -q -O "$RULE_DIR/dos-fd-detect.yaml" \
 https://raw.githubusercontent.com/mohanvamsi06/FYP-CYS-22-26/main/Runtime/Tracepoints/dos-fd-detect.yaml
 
-wget -q -O "$RULE_DIR/sigkill-policies.yaml" \
-https://raw.githubusercontent.com/mohanvamsi06/FYP-CYS-22-26/main/Runtime/Tracepoints/sigkill-policies.yaml
+# wget -q -O "$RULE_DIR/sigkill-policies.yaml" \
+# https://raw.githubusercontent.com/mohanvamsi06/FYP-CYS-22-26/main/Runtime/Tracepoints/sigkill-policies.yaml
 
 echo "[+] Applying all TracingPolicies..."
 kubectl apply -f "$RULE_DIR"
