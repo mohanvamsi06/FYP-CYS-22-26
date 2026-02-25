@@ -123,15 +123,22 @@ kubectl apply -f "$RULE_DIR"
 kubectl get tracingpolicy
 
 # ------------------------------------------------------------------
-# Dashboard Job
+# Dashboard Deployment
 # ------------------------------------------------------------------
-echo "[+] Deploying dashboard job..."
+echo "[+] Deploying dashboard..."
 
 wget -q -O "$BASE_DIR/job.yaml" \
 https://raw.githubusercontent.com/mohanvamsi06/FYP-CYS-22-26/main/job.yaml
 
 kubectl apply -f "$BASE_DIR/job.yaml"
 
+echo "[+] Waiting for dashboard to be ready..."
+kubectl rollout status deployment/k8s-security-dashboard -n default --timeout=60s || true
+
 echo
 echo "[✓] Setup complete!"
+echo
+echo "Access the dashboard at: http://<node-ip>:30500"
+echo "  - Compliance page: http://<node-ip>:30500/compliance"
+echo "  - Runtime page: http://<node-ip>:30500/runtime"
 echo

@@ -15,6 +15,12 @@ rules:
   - apiGroups: ["authorization.k8s.io"]
     resources: ["selfsubjectaccessreviews", "selfsubjectrulesreviews"]
     verbs: ["create"]
+  - apiGroups: [""]
+    resources: ["pods", "pods/log"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["get", "list", "create", "delete"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -42,12 +48,20 @@ subjects:
     name: audit-runner
     namespace: default
 ---
-apiVersion: batch/v1
-kind: Job
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: cis-k8s-dashboard
+  name: k8s-security-dashboard
+  namespace: default
 spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: k8s-security-dashboard
   template:
+    metadata:
+      labels:
+        app: k8s-security-dashboard
     spec:
       nodeSelector:
         node-role.kubernetes.io/control-plane: ""
@@ -58,14 +72,19 @@ spec:
       hostPID: true
       hostNetwork: true
       serviceAccountName: audit-runner
-      restartPolicy: Never
       containers:
         - name: dashboard
           image: mohanvamsi06/fyp:v0.0.1 
           imagePullPolicy: Always
+          ports:
+            - containerPort: 5000
+              name: http
           volumeMounts:
             - name: output
               mountPath: /output
+          env:
+            - name: RESULT_JSON_PATH
+              value: "/output/results.json"
         - name: tetragon-collector
           image: bitnami/kubectl:latest
           command: ["/bin/bash", "-c"]
@@ -74,6 +93,14 @@ spec:
               OUTPUT_FILE="/output/runtime_alerts.json"
               echo "[+] Starting Tetragon log collection..."
               > "$OUTPUT_FILE"
+              
+              # Wait for Tetragon to be ready
+              until kubectl get pods -n tetragon -l app.kubernetes.io/name=tetragon 2>/dev/null | grep -q Running; do
+                echo "Waiting for Tetragon pods..."
+                sleep 5
+              done
+              
+              echo "[+] Tetragon pods found, starting log collection..."
               kubectl logs -n tetragon -l app.kubernetes.io/name=tetragon --follow --tail=1000 2>/dev/null | while read -r line; do
                 if echo "$line" | grep -q '^\{'; then
                   echo "$line" >> "$OUTPUT_FILE"
@@ -87,3 +114,19 @@ spec:
           hostPath:
             path: /var/tmp/results
             type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: k8s-security-dashboard
+  namespace: default
+spec:
+  type: NodePort
+  selector:
+    app: k8s-security-dashboard
+  ports:
+    - port: 5000
+      targetPort: 5000
+      nodePort: 30500
+      protocol: TCP
+      name: http

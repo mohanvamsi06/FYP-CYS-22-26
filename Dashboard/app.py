@@ -10,7 +10,7 @@ JSON_PATH = os.environ.get('RESULT_JSON_PATH', '/var/tmp/results/results.json')
 RESULTS_PATH = "/var/tmp/results/results.json"
 RUNTIME_LOGS_PATH = "/var/tmp/results/runtime_alerts.json"
 JOB_NAME = "cis-k8s-audit"
-JOB_YAML = "job.yaml"
+JOB_YAML = "/app/Compliance/job.yaml"  # Path inside container
 NAMESPACE = "default"
 
 def run_cmd(cmd):

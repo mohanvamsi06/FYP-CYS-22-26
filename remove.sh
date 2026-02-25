@@ -13,7 +13,10 @@ if ! command -v kubectl >/dev/null 2>&1; then
 fi
 
 # Remove dashboard job
-echo "[+] Removing dashboard job..."
+echo "[+] Removing dashboard deployment..."
+kubectl delete deployment k8s-security-dashboard -n default --ignore-not-found=true
+kubectl delete service k8s-security-dashboard -n default --ignore-not-found=true
+
 if [ -f "$BASE_DIR/job.yaml" ]; then
   kubectl delete -f "$BASE_DIR/job.yaml" --ignore-not-found=true
 fi
