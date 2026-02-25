@@ -100,26 +100,22 @@ spec:
               done
               
               echo "[+] Tetragon pods found, starting log collection..."
+              echo "[+] Monitoring DOS events: bind, accept, clone, connect, fd"
               
-              # Filter for important security events only
-              kubectl logs -n tetragon -l app.kubernetes.io/name=tetragon --follow --tail=100 2>/dev/null | \
+              # Capture all events and write to file
+              kubectl logs -n tetragon -l app.kubernetes.io/name=tetragon --follow --tail=0 2>/dev/null | \
               while IFS= read -r line; do
-                # Only process JSON lines
+                # Check if it's valid JSON
                 if echo "$line" | jq -e . >/dev/null 2>&1; then
-                  # Extract policy name and binary
-                  policy=$(echo "$line" | jq -r '.policy_name // empty' 2>/dev/null)
-                  binary=$(echo "$line" | jq -r '.process_exec.process.binary // .process_kprobe.process.binary // .process_tracepoint.process.binary // empty' 2>/dev/null)
+                  # Write all events to file (we'll filter in the dashboard)
+                  echo "$line" >> "$OUTPUT_FILE"
                   
-                  # Skip if from our own collector or kubectl
-                  if [[ "$binary" == *"kubectl"* ]] || [[ "$binary" == *"grep"* ]] || [[ "$binary" == *"jq"* ]]; then
-                    continue
-                  fi
+                  # Log to stdout for debugging
+                  binary=$(echo "$line" | jq -r '.process_exec.process.binary // .process_tracepoint.process.binary // "unknown"' 2>/dev/null)
+                  subsys=$(echo "$line" | jq -r '.process_tracepoint.subsys // "N/A"' 2>/dev/null)
+                  event=$(echo "$line" | jq -r '.process_tracepoint.event // "N/A"' 2>/dev/null)
                   
-                  # Only capture events from our TracingPolicies
-                  if [[ -n "$policy" ]] && [[ "$policy" =~ ^(bind-detect|dos-|rt-|enforce-priv-escape|ptrace-monitoring|file-open-monitoring|chmod-monitoring|chown-monitoring|bpf-monitoring|kernel-module-loading|delete-module-monitoring).*$ ]]; then
-                    echo "$line" >> "$OUTPUT_FILE"
-                    echo "[ALERT] $policy: $binary"
-                  fi
+                  echo "[EVENT] subsys=$subsys event=$event binary=$binary"
                 fi
               done
           volumeMounts:
