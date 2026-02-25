@@ -59,6 +59,14 @@ helm upgrade --install tetragon cilium/tetragon \
 echo "[+] Waiting for Tetragon pods (max ~2 min)..."
 kubectl rollout status ds/tetragon -n tetragon --timeout=120s || true
 
+if kubectl get crd tracingpolicies.cilium.io >/dev/null 2>&1; then
+  echo "[!] Patching Tetragon CRDs with Helm metadata..."
+  for crd in $(kubectl get crd -o name | grep cilium.io); do
+    kubectl label "$crd" app.kubernetes.io/managed-by=Helm --overwrite
+    kubectl annotate "$crd" meta.helm.sh/release-name=tetragon meta.helm.sh/release-namespace=tetragon --overwrite
+  done
+fi
+
 # ------------------------------------------------------------------
 # WAIT FOR CRDs
 # ------------------------------------------------------------------
