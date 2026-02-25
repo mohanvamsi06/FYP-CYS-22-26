@@ -95,9 +95,26 @@ spec:
               done
               
               echo "[+] Tetragon pods found, starting log collection..."
-              kubectl logs -n tetragon -l app.kubernetes.io/name=tetragon --follow --tail=1000 2>/dev/null | while read -r line; do
-                if echo "$line" | grep -q '^\{'; then
-                  echo "$line" >> "$OUTPUT_FILE"
+              
+              # Filter for important security events only
+              kubectl logs -n tetragon -l app.kubernetes.io/name=tetragon --follow --tail=100 2>/dev/null | \
+              while IFS= read -r line; do
+                # Only process JSON lines
+                if echo "$line" | jq -e . >/dev/null 2>&1; then
+                  # Extract policy name and binary
+                  policy=$(echo "$line" | jq -r '.policy_name // empty' 2>/dev/null)
+                  binary=$(echo "$line" | jq -r '.process_exec.process.binary // .process_kprobe.process.binary // .process_tracepoint.process.binary // empty' 2>/dev/null)
+                  
+                  # Skip if from our own collector or kubectl
+                  if [[ "$binary" == *"kubectl"* ]] || [[ "$binary" == *"grep"* ]] || [[ "$binary" == *"jq"* ]]; then
+                    continue
+                  fi
+                  
+                  # Only capture events from our TracingPolicies
+                  if [[ -n "$policy" ]] && [[ "$policy" =~ ^(bind-detect|dos-|rt-|enforce-priv-escape|ptrace-monitoring|file-open-monitoring|chmod-monitoring|chown-monitoring|bpf-monitoring|kernel-module-loading|delete-module-monitoring).*$ ]]; then
+                    echo "$line" >> "$OUTPUT_FILE"
+                    echo "[ALERT] $policy: $binary"
+                  fi
                 fi
               done
           volumeMounts:
