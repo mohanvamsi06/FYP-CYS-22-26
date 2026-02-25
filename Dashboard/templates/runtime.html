@@ -69,46 +69,47 @@ let autoRefreshInterval = null;
 let allAlerts = [];
 
 function getSeverity(alert) {
-  const process_exec = alert.process_exec || {};
-  const process_kprobe = alert.process_kprobe || {};
-  const process_tracepoint = alert.process_tracepoint || {};
-  
   let eventType = '';
-  if (process_exec.function_name) eventType = process_exec.function_name;
-  else if (process_kprobe.function_name) eventType = process_kprobe.function_name;
-  else if (process_tracepoint.subsys) eventType = process_tracepoint.subsys;
+  
+  if (alert.process_tracepoint) {
+    eventType = alert.process_tracepoint.event || '';
+  } else if (alert.process_exec) {
+    eventType = alert.process_exec.function_name || 'execve';
+  } else if (alert.process_kprobe) {
+    eventType = alert.process_kprobe.function_name || '';
+  }
   
   eventType = eventType.toLowerCase();
   
-  if (eventType.includes('sigkill') || eventType.includes('setuid') || eventType.includes('capset')) {
+  if (eventType.includes('setuid') || eventType.includes('capset') || eventType.includes('sigkill') || eventType.includes('unshare') || eventType.includes('mount')) {
     return 'critical';
-  } else if (eventType.includes('dos') || eventType.includes('bind')) {
+  } else if (eventType.includes('clone') || eventType.includes('accept') || eventType.includes('connect') || eventType.includes('bind')) {
     return 'high';
-  } else if (eventType.includes('execve') || eventType.includes('ptrace')) {
+  } else if (eventType.includes('execve') || eventType.includes('ptrace') || eventType.includes('chmod') || eventType.includes('chown')) {
     return 'medium';
   }
   return 'low';
 }
 
 function getEventType(alert) {
-  const process_exec = alert.process_exec || {};
-  const process_kprobe = alert.process_kprobe || {};
-  const process_tracepoint = alert.process_tracepoint || {};
-  
-  if (process_exec.function_name) return process_exec.function_name;
-  if (process_kprobe.function_name) return process_kprobe.function_name;
-  if (process_tracepoint.subsys) return process_tracepoint.subsys;
+  if (alert.process_tracepoint) {
+    return alert.process_tracepoint.event || 'unknown';
+  } else if (alert.process_exec) {
+    return 'execve';
+  } else if (alert.process_kprobe) {
+    return alert.process_kprobe.function_name || 'kprobe';
+  }
   return 'unknown';
 }
 
 function getProcessName(alert) {
-  const process_exec = alert.process_exec || {};
-  const process_kprobe = alert.process_kprobe || {};
-  const process_tracepoint = alert.process_tracepoint || {};
-  
-  if (process_exec.process && process_exec.process.binary) return process_exec.process.binary;
-  if (process_kprobe.process && process_kprobe.process.binary) return process_kprobe.process.binary;
-  if (process_tracepoint.process && process_tracepoint.process.binary) return process_tracepoint.process.binary;
+  if (alert.process_tracepoint && alert.process_tracepoint.process) {
+    return alert.process_tracepoint.process.binary || 'unknown';
+  } else if (alert.process_exec && alert.process_exec.process) {
+    return alert.process_exec.process.binary || 'unknown';
+  } else if (alert.process_kprobe && alert.process_kprobe.process) {
+    return alert.process_kprobe.process.binary || 'unknown';
+  }
   return 'unknown';
 }
 
