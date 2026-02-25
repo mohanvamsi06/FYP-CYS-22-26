@@ -81,12 +81,17 @@ spec:
               value: "/output/results.json"
         - name: tetragon-collector
           image: bitnami/kubectl:latest
+          securityContext:
+            runAsUser: 0
           command: ["/bin/bash", "-c"]
           args:
             - |
               OUTPUT_FILE="/output/runtime_alerts.json"
               echo "[+] Starting Tetragon log collection..."
-              > "$OUTPUT_FILE"
+              
+              # Create file with proper permissions
+              touch "$OUTPUT_FILE"
+              chmod 666 "$OUTPUT_FILE"
               
               # Wait for Tetragon to be ready
               until kubectl get pods -n tetragon -l app.kubernetes.io/name=tetragon 2>/dev/null | grep -q Running; do
