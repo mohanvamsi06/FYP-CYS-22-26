@@ -138,7 +138,6 @@ kubectl rollout status deployment/k8s-security-dashboard -n default --timeout=60
 echo
 echo "[✓] Setup complete!"
 echo
-echo "Access the dashboard at: http://<node-ip>:30500"
-echo "  - Compliance page: http://<node-ip>:30500/compliance"
-echo "  - Runtime page: http://<node-ip>:30500/runtime"
+echo "Access the dashboard at: "
+minikube service k8s-security-dashboard --url
 echo

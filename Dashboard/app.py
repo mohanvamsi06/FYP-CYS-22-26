@@ -10,8 +10,59 @@ JSON_PATH = os.environ.get('RESULT_JSON_PATH', '/var/tmp/results/results.json')
 RESULTS_PATH = "/var/tmp/results/results.json"
 RUNTIME_LOGS_PATH = "/var/tmp/results/runtime_alerts.json"
 JOB_NAME = "cis-k8s-audit"
-JOB_YAML = "/app/Compliance/job.yaml"  # Path inside container
 NAMESPACE = "default"
+
+# Compliance job YAML template
+COMPLIANCE_JOB_YAML = """
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cis-k8s-audit
+spec:
+  template:
+    spec:
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: ""
+      tolerations:
+      - key: "node-role.kubernetes.io/control-plane"
+        operator: "Exists"
+        effect: "NoSchedule"
+      - operator: "Exists"
+      hostPID: true
+      hostNetwork: true
+      serviceAccountName: audit-runner
+      restartPolicy: Never
+      containers:
+        - name: check
+          image: mohanvamsi06/fyp:master_node 
+          imagePullPolicy: Always
+          volumeMounts:
+            - name: kubernetes
+              mountPath: /etc/kubernetes
+              readOnly: true
+            - name: cni
+              mountPath: /etc/cni/net.d
+              readOnly: true
+            - name: etcd
+              mountPath: /var/lib/etcd
+              readOnly: true
+            - name: output
+              mountPath: /output
+      volumes:
+        - name: kubernetes
+          hostPath:
+            path: /etc/kubernetes
+        - name: cni
+          hostPath:
+            path: /etc/cni/net.d
+        - name: etcd
+          hostPath:
+            path: /var/lib/etcd
+        - name: output
+          hostPath:
+            path: /var/tmp/results
+            type: DirectoryOrCreate
+"""
 
 def run_cmd(cmd):
     return subprocess.run(
@@ -119,10 +170,18 @@ def start_scan():
         "-n", NAMESPACE, "--ignore-not-found=true"
     ])
 
-    # 3. Apply job.yaml
-    res = run_cmd(["kubectl", "apply", "-f", JOB_YAML])
-    if res.returncode != 0:
-        return jsonify({"error": res.stderr}), 500
+    # 3. Apply job YAML via stdin
+    proc = subprocess.run(
+        ["kubectl", "apply", "-f", "-"],
+        input=COMPLIANCE_JOB_YAML,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        check=False
+    )
+    
+    if proc.returncode != 0:
+        return jsonify({"error": proc.stderr}), 500
 
     return jsonify({"status": "started"})
 
