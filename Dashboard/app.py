@@ -8,6 +8,7 @@ import time
 app = Flask(__name__)
 JSON_PATH = os.environ.get('RESULT_JSON_PATH', '/var/tmp/results/results.json')
 RESULTS_PATH = "/var/tmp/results/results.json"
+RUNTIME_LOGS_PATH = "/var/tmp/results/runtime_alerts.json"
 JOB_NAME = "cis-k8s-audit"
 JOB_YAML = "job.yaml"
 NAMESPACE = "default"
@@ -158,6 +159,10 @@ def index():
 def compliance():
     return render_template('compliance.html')
 
+@app.route('/runtime')
+def runtime():
+    return render_template('runtime.html')
+
 @app.route('/api/data')
 def api_raw():
     data = load_raw()
@@ -176,6 +181,106 @@ def serve_result():
     if os.path.exists(JSON_PATH):
         return send_from_directory(os.path.dirname(os.path.abspath(JSON_PATH)) or '.', os.path.basename(JSON_PATH))
     return ("Not found", 404)
+
+@app.route('/api/runtime/alerts')
+def runtime_alerts():
+    """Fetch runtime security alerts from Tetragon logs"""
+    try:
+        if not os.path.exists(RUNTIME_LOGS_PATH):
+            return jsonify({'alerts': [], 'total': 0, 'error': 'No runtime logs found'})
+        
+        with open(RUNTIME_LOGS_PATH, 'r', encoding='utf-8') as f:
+            alerts = []
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    alert = json.loads(line)
+                    alerts.append(alert)
+                except json.JSONDecodeError:
+                    continue
+            
+            # Sort by timestamp (most recent first)
+            alerts.sort(key=lambda x: x.get('time', ''), reverse=True)
+            
+            # Limit to last 1000 alerts
+            alerts = alerts[:1000]
+            
+            return jsonify({
+                'alerts': alerts,
+                'total': len(alerts),
+                'timestamp': time.time()
+            })
+    except Exception as e:
+        return jsonify({'error': str(e), 'alerts': [], 'total': 0}), 500
+
+@app.route('/api/runtime/stats')
+def runtime_stats():
+    """Get statistics about runtime alerts"""
+    try:
+        if not os.path.exists(RUNTIME_LOGS_PATH):
+            return jsonify({'error': 'No runtime logs found'})
+        
+        with open(RUNTIME_LOGS_PATH, 'r', encoding='utf-8') as f:
+            alerts = []
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    alert = json.loads(line)
+                    alerts.append(alert)
+                except json.JSONDecodeError:
+                    continue
+        
+        # Calculate statistics
+        total = len(alerts)
+        by_type = Counter()
+        by_process = Counter()
+        by_severity = Counter()
+        
+        for alert in alerts:
+            # Extract event type
+            process_exec = alert.get('process_exec', {})
+            process_kprobe = alert.get('process_kprobe', {})
+            process_tracepoint = alert.get('process_tracepoint', {})
+            
+            if process_exec:
+                event_type = 'execve'
+                process_name = process_exec.get('process', {}).get('binary', 'unknown')
+            elif process_kprobe:
+                event_type = process_kprobe.get('function_name', 'kprobe')
+                process_name = process_kprobe.get('process', {}).get('binary', 'unknown')
+            elif process_tracepoint:
+                event_type = process_tracepoint.get('subsys', 'tracepoint')
+                process_name = process_tracepoint.get('process', {}).get('binary', 'unknown')
+            else:
+                event_type = 'unknown'
+                process_name = 'unknown'
+            
+            by_type[event_type] += 1
+            by_process[process_name] += 1
+            
+            # Determine severity based on event type
+            if 'sigkill' in event_type.lower() or 'setuid' in event_type.lower() or 'capset' in event_type.lower():
+                by_severity['critical'] += 1
+            elif 'dos' in event_type.lower() or 'bind' in event_type.lower():
+                by_severity['high'] += 1
+            elif 'execve' in event_type.lower() or 'ptrace' in event_type.lower():
+                by_severity['medium'] += 1
+            else:
+                by_severity['low'] += 1
+        
+        return jsonify({
+            'total': total,
+            'by_type': dict(by_type.most_common(10)),
+            'by_process': dict(by_process.most_common(10)),
+            'by_severity': dict(by_severity),
+            'timestamp': time.time()
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

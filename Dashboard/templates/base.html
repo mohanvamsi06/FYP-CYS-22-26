@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Compliance Dashboard</title>
+<title>K8s Security Dashboard</title>
 <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body>
@@ -11,15 +11,15 @@
 <aside class="sidebar">
 <div class="brand">Secure k8s</div>
 <nav>
-<a href="/compliance" class="nav-link active">Compliance</a>
-<!-- Add other links here -->
+<a href="/compliance" class="nav-link">Compliance</a>
+<a href="/runtime" class="nav-link">Runtime</a>
 </nav>
 </aside>
 
 
 <main class="main">
 <header class="topbar">
-<h1>Compliance Dashboard</h1>
+<h1 id="page-title">K8s Security Dashboard</h1>
 </header>
 
 
@@ -32,5 +32,27 @@
 
 
 <script src="/static/app.js"></script>
+<script>
+// Highlight active nav link based on current path
+document.addEventListener('DOMContentLoaded', () => {
+  const path = window.location.pathname;
+  document.querySelectorAll('.nav-link').forEach(link => {
+    link.classList.remove('active');
+    if (link.getAttribute('href') === path) {
+      link.classList.add('active');
+    }
+  });
+  
+  // Update page title
+  const titleMap = {
+    '/compliance': 'Compliance',
+    '/runtime': 'Runtime Security'
+  };
+  const pageTitle = document.getElementById('page-title');
+  if (pageTitle && titleMap[path]) {
+    pageTitle.textContent = titleMap[path];
+  }
+});
+</script>
 </body>
 </html>

@@ -1,0 +1,302 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="margin-bottom:12px;display:flex;align-items:center;gap:12px;">
+  <button id="refresh-alerts-btn"
+          style="padding:8px 14px;border-radius:8px;border:1px solid #e5e7eb;background:#0f172a;color:white;cursor:pointer;">
+    Refresh Alerts
+  </button>
+  <label style="display:flex;align-items:center;gap:6px;">
+    <input type="checkbox" id="auto-refresh-toggle" />
+    <span style="font-size:14px;">Auto-refresh (5s)</span>
+  </label>
+  <span id="last-updated" style="color:#555;font-size:14px;margin-left:auto;"></span>
+</div>
+
+<div class="cards">
+  <div class="card">
+    <h3>Total Alerts</h3>
+    <p id="total-alerts">—</p>
+  </div>
+  <div class="card">
+    <h3>Critical</h3>
+    <p id="count-critical" style="color:#dc2626;">—</p>
+  </div>
+  <div class="card">
+    <h3>High</h3>
+    <p id="count-high" style="color:#ea580c;">—</p>
+  </div>
+  <div class="card">
+    <h3>Medium</h3>
+    <p id="count-medium" style="color:#ca8a04;">—</p>
+  </div>
+</div>
+
+<div class="panels" style="margin-top:12px;">
+  <div class="panel" style="min-width:360px;">
+    <h3>Top Event Types</h3>
+    <div id="event-types" style="padding:12px;background:#fff;border-radius:8px;box-shadow:0 1px 2px rgba(0,0,0,0.04);">
+      <div id="event-types-list">Loading…</div>
+    </div>
+  </div>
+
+  <div class="panel" style="min-width:360px;">
+    <h3>Top Processes</h3>
+    <div id="top-processes" style="padding:12px;background:#fff;border-radius:8px;box-shadow:0 1px 2px rgba(0,0,0,0.04);">
+      <div id="top-processes-list">Loading…</div>
+    </div>
+  </div>
+</div>
+
+<div class="panel" style="margin-top:12px;">
+  <h3>Recent Alerts</h3>
+  <div style="margin-bottom:8px;display:flex;gap:8px;">
+    <input type="text" id="filter-input" placeholder="Filter by process, event type..." 
+           style="flex:1;padding:6px 10px;border:1px solid #e5e7eb;border-radius:6px;" />
+    <select id="severity-filter" style="padding:6px 10px;border:1px solid #e5e7eb;border-radius:6px;">
+      <option value="">All Severities</option>
+      <option value="critical">Critical</option>
+      <option value="high">High</option>
+      <option value="medium">Medium</option>
+      <option value="low">Low</option>
+    </select>
+  </div>
+  <div id="alerts-list" style="display:flex;flex-direction:column;gap:8px;max-height:600px;overflow:auto;"></div>
+</div>
+
+<script>
+let autoRefreshInterval = null;
+let allAlerts = [];
+
+function getSeverity(alert) {
+  const process_exec = alert.process_exec || {};
+  const process_kprobe = alert.process_kprobe || {};
+  const process_tracepoint = alert.process_tracepoint || {};
+  
+  let eventType = '';
+  if (process_exec.function_name) eventType = process_exec.function_name;
+  else if (process_kprobe.function_name) eventType = process_kprobe.function_name;
+  else if (process_tracepoint.subsys) eventType = process_tracepoint.subsys;
+  
+  eventType = eventType.toLowerCase();
+  
+  if (eventType.includes('sigkill') || eventType.includes('setuid') || eventType.includes('capset')) {
+    return 'critical';
+  } else if (eventType.includes('dos') || eventType.includes('bind')) {
+    return 'high';
+  } else if (eventType.includes('execve') || eventType.includes('ptrace')) {
+    return 'medium';
+  }
+  return 'low';
+}
+
+function getEventType(alert) {
+  const process_exec = alert.process_exec || {};
+  const process_kprobe = alert.process_kprobe || {};
+  const process_tracepoint = alert.process_tracepoint || {};
+  
+  if (process_exec.function_name) return process_exec.function_name;
+  if (process_kprobe.function_name) return process_kprobe.function_name;
+  if (process_tracepoint.subsys) return process_tracepoint.subsys;
+  return 'unknown';
+}
+
+function getProcessName(alert) {
+  const process_exec = alert.process_exec || {};
+  const process_kprobe = alert.process_kprobe || {};
+  const process_tracepoint = alert.process_tracepoint || {};
+  
+  if (process_exec.process && process_exec.process.binary) return process_exec.process.binary;
+  if (process_kprobe.process && process_kprobe.process.binary) return process_kprobe.process.binary;
+  if (process_tracepoint.process && process_tracepoint.process.binary) return process_tracepoint.process.binary;
+  return 'unknown';
+}
+
+async function fetchRuntimeStats() {
+  const res = await fetch('/api/runtime/stats');
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+async function fetchRuntimeAlerts() {
+  const res = await fetch('/api/runtime/alerts');
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+function renderStats(stats) {
+  document.getElementById('total-alerts').textContent = stats.total || 0;
+  document.getElementById('count-critical').textContent = stats.by_severity?.critical || 0;
+  document.getElementById('count-high').textContent = stats.by_severity?.high || 0;
+  document.getElementById('count-medium').textContent = stats.by_severity?.medium || 0;
+  
+  const eventTypesList = document.getElementById('event-types-list');
+  if (stats.by_type && Object.keys(stats.by_type).length > 0) {
+    const lines = Object.entries(stats.by_type).map(([k, v]) => `${k}: ${v}`);
+    eventTypesList.textContent = lines.join('\n');
+  } else {
+    eventTypesList.textContent = 'No events';
+  }
+  
+  const processesList = document.getElementById('top-processes-list');
+  if (stats.by_process && Object.keys(stats.by_process).length > 0) {
+    const lines = Object.entries(stats.by_process).map(([k, v]) => `${k}: ${v}`);
+    processesList.textContent = lines.join('\n');
+  } else {
+    processesList.textContent = 'No processes';
+  }
+}
+
+function renderAlerts(alerts) {
+  const host = document.getElementById('alerts-list');
+  if (!host) return;
+  
+  host.innerHTML = '';
+  
+  if (!Array.isArray(alerts) || alerts.length === 0) {
+    host.innerHTML = '<div style="padding:12px;color:#666;text-align:center;">No alerts found</div>';
+    return;
+  }
+  
+  const filterText = document.getElementById('filter-input').value.toLowerCase();
+  const severityFilter = document.getElementById('severity-filter').value;
+  
+  const filtered = alerts.filter(alert => {
+    const severity = getSeverity(alert);
+    const eventType = getEventType(alert).toLowerCase();
+    const processName = getProcessName(alert).toLowerCase();
+    
+    if (severityFilter && severity !== severityFilter) return false;
+    if (filterText && !eventType.includes(filterText) && !processName.includes(filterText)) return false;
+    
+    return true;
+  });
+  
+  if (filtered.length === 0) {
+    host.innerHTML = '<div style="padding:12px;color:#666;text-align:center;">No alerts match filters</div>';
+    return;
+  }
+  
+  filtered.slice(0, 100).forEach(alert => {
+    const card = document.createElement('div');
+    card.style.background = '#fff';
+    card.style.padding = '10px';
+    card.style.borderRadius = '6px';
+    card.style.boxShadow = '0 1px 2px rgba(0,0,0,0.04)';
+    card.style.display = 'flex';
+    card.style.flexDirection = 'column';
+    
+    const severity = getSeverity(alert);
+    const eventType = getEventType(alert);
+    const processName = getProcessName(alert);
+    const timestamp = alert.time || 'unknown';
+    
+    const severityColors = {
+      critical: '#dc2626',
+      high: '#ea580c',
+      medium: '#ca8a04',
+      low: '#65a30d'
+    };
+    
+    const header = document.createElement('div');
+    header.style.display = 'flex';
+    header.style.justifyContent = 'space-between';
+    header.style.alignItems = 'center';
+    header.style.marginBottom = '6px';
+    
+    const title = document.createElement('div');
+    title.style.fontWeight = '600';
+    title.innerHTML = `<span style="color:${severityColors[severity]};text-transform:uppercase;font-size:11px;margin-right:8px;">[${severity}]</span>${eventType}`;
+    
+    const time = document.createElement('div');
+    time.style.fontSize = '12px';
+    time.style.color = '#666';
+    time.textContent = new Date(timestamp).toLocaleString();
+    
+    header.appendChild(title);
+    header.appendChild(time);
+    card.appendChild(header);
+    
+    const info = document.createElement('div');
+    info.style.fontSize = '13px';
+    info.style.color = '#444';
+    info.style.marginBottom = '6px';
+    info.textContent = `Process: ${processName}`;
+    card.appendChild(info);
+    
+    const expandBtn = document.createElement('button');
+    expandBtn.textContent = 'Details';
+    expandBtn.style.cursor = 'pointer';
+    expandBtn.style.padding = '4px 8px';
+    expandBtn.style.border = '1px solid #e5e7eb';
+    expandBtn.style.borderRadius = '4px';
+    expandBtn.style.background = '#fff';
+    expandBtn.style.fontSize = '12px';
+    expandBtn.style.alignSelf = 'flex-start';
+    card.appendChild(expandBtn);
+    
+    const details = document.createElement('pre');
+    details.style.display = 'none';
+    details.style.marginTop = '8px';
+    details.style.fontSize = '11px';
+    details.style.background = '#f5f7fa';
+    details.style.padding = '8px';
+    details.style.borderRadius = '4px';
+    details.style.maxHeight = '200px';
+    details.style.overflow = 'auto';
+    details.textContent = JSON.stringify(alert, null, 2);
+    card.appendChild(details);
+    
+    expandBtn.addEventListener('click', () => {
+      details.style.display = details.style.display === 'none' ? 'block' : 'none';
+      expandBtn.textContent = details.style.display === 'none' ? 'Details' : 'Hide';
+    });
+    
+    host.appendChild(card);
+  });
+  
+  if (filtered.length > 100) {
+    const note = document.createElement('div');
+    note.style.padding = '8px';
+    note.style.textAlign = 'center';
+    note.style.color = '#666';
+    note.style.fontSize = '13px';
+    note.textContent = `Showing 100 of ${filtered.length} alerts`;
+    host.appendChild(note);
+  }
+}
+
+async function refreshData() {
+  try {
+    const [stats, alertsData] = await Promise.all([fetchRuntimeStats(), fetchRuntimeAlerts()]);
+    allAlerts = alertsData.alerts || [];
+    renderStats(stats);
+    renderAlerts(allAlerts);
+    document.getElementById('last-updated').textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+  } catch (e) {
+    console.error('Failed to fetch runtime data', e);
+    document.getElementById('alerts-list').innerHTML = '<div style="padding:12px;color:#dc2626;">Error loading alerts: ' + e.message + '</div>';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  refreshData();
+  
+  document.getElementById('refresh-alerts-btn').addEventListener('click', refreshData);
+  
+  document.getElementById('auto-refresh-toggle').addEventListener('change', (e) => {
+    if (e.target.checked) {
+      autoRefreshInterval = setInterval(refreshData, 5000);
+    } else {
+      if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+        autoRefreshInterval = null;
+      }
+    }
+  });
+  
+  document.getElementById('filter-input').addEventListener('input', () => renderAlerts(allAlerts));
+  document.getElementById('severity-filter').addEventListener('change', () => renderAlerts(allAlerts));
+});
+</script>
+{% endblock %}

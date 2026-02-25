@@ -66,6 +66,22 @@ spec:
           volumeMounts:
             - name: output
               mountPath: /output
+        - name: tetragon-collector
+          image: bitnami/kubectl:latest
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              OUTPUT_FILE="/output/runtime_alerts.json"
+              echo "[+] Starting Tetragon log collection..."
+              > "$OUTPUT_FILE"
+              kubectl logs -n tetragon -l app.kubernetes.io/name=tetragon --follow --tail=1000 2>/dev/null | while read -r line; do
+                if echo "$line" | grep -q '^\{'; then
+                  echo "$line" >> "$OUTPUT_FILE"
+                fi
+              done
+          volumeMounts:
+            - name: output
+              mountPath: /output
       volumes:
         - name: output
           hostPath:
