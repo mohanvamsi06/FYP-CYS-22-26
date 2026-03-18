@@ -5,37 +5,12 @@ metadata:
 spec:
   tracepoints:
   - subsystem: "syscalls"
-    event: "sys_enter_chmod"
-    args:
-    - index: 0
-      type: "string"     # Filename
-    - index: 1
-      type: "int"        # Mode (permissions)
-    selectors:
-    # Alert on chmod in suspicious locations
-    - matchArgs:
-      - index: 0         # Filename
-        operator: "Prefix"
-        values:
-        - "/tmp/"
-        - "/dev/shm/"
-        - "/var/tmp/"
-  
-  - subsystem: "syscalls"
     event: "sys_enter_fchmodat"
-    args:
-    - index: 0
-      type: "int"        # Directory FD
-    - index: 1
-      type: "string"     # Filename
-    - index: 2
-      type: "int"        # Mode
     selectors:
-    # Alert on chmod in suspicious locations
-    - matchArgs:
-      - index: 1         # Filename
-        operator: "Prefix"
-        values:
-        - "/tmp/"
-        - "/dev/shm/"
-        - "/var/tmp/"
+    - matchActions:
+      - action: Post
+  - subsystem: "syscalls"
+    event: "sys_enter_chmod"
+    selectors:
+    - matchActions:
+      - action: Post

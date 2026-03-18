@@ -5,6 +5,4 @@ metadata:
 spec:
   kprobes:
   - call: security_inode_unlink
-    syscall: true
-    matchActions:
-    - action: Post
+    syscall: false

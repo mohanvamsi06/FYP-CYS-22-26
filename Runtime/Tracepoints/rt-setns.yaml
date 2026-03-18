@@ -4,7 +4,5 @@ metadata:
   name: rt-setns-11
 spec:
   kprobes:
-  - call: setns
-    syscall: true
-    matchActions:
-    - action: Post
+  - call: "__x64_sys_setns"
+    syscall: false

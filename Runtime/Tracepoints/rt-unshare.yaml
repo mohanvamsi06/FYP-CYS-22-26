@@ -4,7 +4,5 @@ metadata:
   name: rt-unshare-05
 spec:
   kprobes:
-  - call: unshare
-    syscall: true
-    matchActions:
-    - action: Post
+  - call: "__x64_sys_unshare"
+    syscall: false

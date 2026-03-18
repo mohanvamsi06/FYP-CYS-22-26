@@ -5,6 +5,4 @@ metadata:
 spec:
   kprobes:
   - call: security_bprm_check
-    syscall: true
-    matchActions:
-    - action: Post
+    syscall: false

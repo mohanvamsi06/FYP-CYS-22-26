@@ -4,7 +4,5 @@ metadata:
   name: rt-execve-01
 spec:
   kprobes:
-  - call: execve
-    syscall: true
-    matchActions:
-    - action: Post
+  - call: "__x64_sys_execve"
+    syscall: false
