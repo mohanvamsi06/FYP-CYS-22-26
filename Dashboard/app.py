@@ -21,7 +21,7 @@ EXCLUDED_BINARIES = os.environ.get('EXCLUDED_BINARIES',
 # Event types to include (empty = include all)
 # Options: 'process_exec', 'process_tracepoint', 'process_kprobe', 'process_exit'
 INCLUDED_EVENT_TYPES = os.environ.get('INCLUDED_EVENT_TYPES', 
-    'process_tracepoint'
+    'process_tracepoint,process_kprobe'
 ).split(',') if os.environ.get('INCLUDED_EVENT_TYPES') else []
 
 # Subsystems to include (empty = include all)
@@ -386,13 +386,28 @@ def runtime_stats():
             by_type[event_type] += 1
             by_process[process_name] += 1
             
-            # Determine severity based on event type
+            # Determine severity based on event type / function name
             event_lower = event_type.lower()
-            if any(x in event_lower for x in ['setuid', 'capset', 'sigkill', 'unshare', 'mount']):
+            if any(x in event_lower for x in [
+                'setuid', 'capset', 'sigkill', 'mount',
+                'setns', 'unshare',                          # namespace/container escape
+                'security_inode_unlink',                     # file deletion at LSM
+                'security_inode_rename',                     # file rename at LSM
+            ]):
                 by_severity['critical'] += 1
-            elif any(x in event_lower for x in ['clone', 'accept', 'connect', 'bind']):
+            elif any(x in event_lower for x in [
+                'clone', 'accept', 'connect', 'bind',        # DoS / network
+                'security_socket_connect',                   # socket connect LSM
+                'fd_install',                                # fd creation (DoS)
+                'security_bprm_check',                       # binary exec check
+            ]):
                 by_severity['high'] += 1
-            elif any(x in event_lower for x in ['execve', 'ptrace', 'chmod', 'chown']):
+            elif any(x in event_lower for x in [
+                'execve', 'x64_sys_execve',                  # process execution
+                'chmod', 'fchmodat',                         # permission changes
+                'chown', 'fchownat',                         # ownership changes
+                'security_file_open',                        # file open LSM
+            ]):
                 by_severity['medium'] += 1
             else:
                 by_severity['low'] += 1

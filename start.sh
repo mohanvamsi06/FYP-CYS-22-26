@@ -99,23 +99,35 @@ echo "[✓] Tetragon CRDs detected."
 # ------------------------------------------------------------------
 echo "[+] Downloading Tetragon rules..."
 
-wget -q -O "$RULE_DIR/bind-detect.yaml" \
-https://raw.githubusercontent.com/mohanvamsi06/FYP-CYS-22-26/main/Runtime/Tracepoints/bind-detect.yaml
+BASE_URL="https://raw.githubusercontent.com/mohanvamsi06/FYP-CYS-22-26/main/Runtime/Tracepoints"
 
-wget -q -O "$RULE_DIR/dos-accept-detect.yaml" \
-https://raw.githubusercontent.com/mohanvamsi06/FYP-CYS-22-26/main/Runtime/Tracepoints/dos-accept-detect.yaml
+# DoS detection
+wget -q -O "$RULE_DIR/bind-detect.yaml"        "$BASE_URL/bind-detect.yaml"
+wget -q -O "$RULE_DIR/dos-accept-detect.yaml"  "$BASE_URL/dos-accept-detect.yaml"
+wget -q -O "$RULE_DIR/dos-clone-detect.yaml"   "$BASE_URL/dos-clone-detect.yaml"
+wget -q -O "$RULE_DIR/dos-connect-detect.yaml" "$BASE_URL/dos-connect-detect.yaml"
+wget -q -O "$RULE_DIR/dos-fd-detect.yaml"      "$BASE_URL/dos-fd-detect.yaml"
 
-wget -q -O "$RULE_DIR/dos-clone-detect.yaml" \
-https://raw.githubusercontent.com/mohanvamsi06/FYP-CYS-22-26/main/Runtime/Tracepoints/dos-clone-detect.yaml
+# File & permission monitoring
+wget -q -O "$RULE_DIR/rt-chmod.yaml"                  "$BASE_URL/rt-chmod.yaml"
+wget -q -O "$RULE_DIR/rt-chown.yaml"                  "$BASE_URL/rt-chown.yaml"
+wget -q -O "$RULE_DIR/rt-security-file-open.yaml"     "$BASE_URL/rt-security-file-open.yaml"
+wget -q -O "$RULE_DIR/rt-security-inode-rename.yaml"  "$BASE_URL/rt-security-inode-rename.yaml"
+wget -q -O "$RULE_DIR/rt-security-inode-unlink.yaml"  "$BASE_URL/rt-security-inode-unlink.yaml"
 
-wget -q -O "$RULE_DIR/dos-connect-detect.yaml" \
-https://raw.githubusercontent.com/mohanvamsi06/FYP-CYS-22-26/main/Runtime/Tracepoints/dos-connect-detect.yaml
+# Process execution
+wget -q -O "$RULE_DIR/rt-execve.yaml"              "$BASE_URL/rt-execve.yaml"
+wget -q -O "$RULE_DIR/rt-security-bprm-check.yaml" "$BASE_URL/rt-security-bprm-check.yaml"
 
-wget -q -O "$RULE_DIR/dos-fd-detect.yaml" \
-https://raw.githubusercontent.com/mohanvamsi06/FYP-CYS-22-26/main/Runtime/Tracepoints/dos-fd-detect.yaml
+# Network
+wget -q -O "$RULE_DIR/rt-security-socket-connect.yaml" "$BASE_URL/rt-security-socket-connect.yaml"
 
-# wget -q -O "$RULE_DIR/sigkill-policies.yaml" \
-# https://raw.githubusercontent.com/mohanvamsi06/FYP-CYS-22-26/main/Runtime/Tracepoints/sigkill-policies.yaml
+# Namespace & container escape
+wget -q -O "$RULE_DIR/rt-setns.yaml"   "$BASE_URL/rt-setns.yaml"
+wget -q -O "$RULE_DIR/rt-unshare.yaml" "$BASE_URL/rt-unshare.yaml"
+
+# Enforcement (disabled by default - uncomment to enable active SIGKILL enforcement)
+# wget -q -O "$RULE_DIR/sigkill-policies.yaml" "$BASE_URL/sigkill-policies.yaml"
 
 echo "[+] Applying all TracingPolicies..."
 kubectl apply -f "$RULE_DIR"
@@ -132,8 +144,8 @@ https://raw.githubusercontent.com/mohanvamsi06/FYP-CYS-22-26/main/job.yaml
 
 kubectl apply -f "$BASE_DIR/job.yaml"
 
-echo "[+] Waiting for dashboard to be ready..."
-kubectl rollout status deployment/k8s-security-dashboard -n default --timeout=60s || true
+echo "[+] Waiting for dashboard to be ready (may take a few mins on first run)..."
+kubectl rollout status deployment/k8s-security-dashboard -n default --timeout=300s || true
 
 echo
 echo "[✓] Setup complete!"
