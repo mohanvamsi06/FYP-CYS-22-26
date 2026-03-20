@@ -34,16 +34,13 @@ kubectl create namespace tetragon --dry-run=client -o yaml | kubectl apply -f -
 if kubectl get crd tracingpolicies.cilium.io >/dev/null 2>&1; then
   echo "[!] Found existing Tetragon CRDs. Adding Helm metadata..."
   
-  # Patch CRDs with Helm labels and annotations
-  kubectl label crd tracingpolicies.cilium.io app.kubernetes.io/managed-by=Helm --overwrite
-  kubectl annotate crd tracingpolicies.cilium.io meta.helm.sh/release-name=tetragon --overwrite
-  kubectl annotate crd tracingpolicies.cilium.io meta.helm.sh/release-namespace=tetragon --overwrite
-  
-  if kubectl get crd tracingpoliciesnamespaced.cilium.io >/dev/null 2>&1; then
-    kubectl label crd tracingpoliciesnamespaced.cilium.io app.kubernetes.io/managed-by=Helm --overwrite
-    kubectl annotate crd tracingpoliciesnamespaced.cilium.io meta.helm.sh/release-name=tetragon --overwrite
-    kubectl annotate crd tracingpoliciesnamespaced.cilium.io meta.helm.sh/release-namespace=tetragon --overwrite
-  fi
+  for crd in tracingpolicies.cilium.io tracingpoliciesnamespaced.cilium.io; do
+    if kubectl get crd "$crd" >/dev/null 2>&1; then
+      kubectl label crd "$crd" app.kubernetes.io/managed-by=Helm --overwrite
+      kubectl annotate crd "$crd" meta.helm.sh/release-name=tetragon --overwrite
+      kubectl annotate crd "$crd" meta.helm.sh/release-namespace=tetragon --overwrite
+    fi
+  done
   
   echo "[✓] CRDs patched with Helm metadata"
 fi

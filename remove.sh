@@ -33,6 +33,14 @@ if command -v helm >/dev/null 2>&1; then
   helm uninstall tetragon -n tetragon --ignore-not-found 2>/dev/null || true
 fi
 
+# Delete orphaned Tetragon CRDs (Helm sometimes leaves these behind)
+echo "[+] Removing Tetragon CRDs..."
+for crd in tracingpolicies.cilium.io tracingpoliciesnamespaced.cilium.io; do
+  if kubectl get crd "$crd" >/dev/null 2>&1; then
+    kubectl delete crd "$crd" --ignore-not-found=true
+  fi
+done
+
 # Delete tetragon namespace
 echo "[+] Deleting tetragon namespace..."
 kubectl delete namespace tetragon --ignore-not-found=true --timeout=60s || true
