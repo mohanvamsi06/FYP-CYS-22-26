@@ -142,7 +142,15 @@ https://raw.githubusercontent.com/mohanvamsi06/FYP-CYS-22-26/main/job.yaml
 kubectl apply -f "$BASE_DIR/job.yaml"
 
 echo "[+] Waiting for dashboard to be ready (may take a few mins on first run)..."
-kubectl rollout status deployment/k8s-security-dashboard -n default --timeout=300s || true
+kubectl rollout status deployment/k8s-security-dashboard -n default --timeout=300s || {
+  echo "[!] Rollout timed out. Checking pod status..."
+  kubectl get pods -n default -l app=k8s-security-dashboard
+  kubectl describe pod -n default -l app=k8s-security-dashboard | tail -30
+  echo "[!] The pod may still be pulling the image. Wait a moment and re-run:"
+  echo "    kubectl rollout status deployment/k8s-security-dashboard -n default"
+  echo "    minikube service k8s-security-dashboard --url"
+  exit 1
+}
 
 echo
 echo "[✓] Setup complete!"
