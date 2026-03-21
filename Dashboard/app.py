@@ -26,9 +26,7 @@ INCLUDED_EVENT_TYPES = os.environ.get('INCLUDED_EVENT_TYPES',
 
 # Subsystems to include (empty = include all)
 # For tracepoints: 'syscalls', 'raw_syscalls', etc.
-INCLUDED_SUBSYSTEMS = os.environ.get('INCLUDED_SUBSYSTEMS', 
-    'syscalls'
-).split(',') if os.environ.get('INCLUDED_SUBSYSTEMS') else []
+INCLUDED_SUBSYSTEMS = os.environ.get('INCLUDED_SUBSYSTEMS', '').split(',') if os.environ.get('INCLUDED_SUBSYSTEMS') else []
 
 # Compliance job YAML template
 COMPLIANCE_JOB_YAML = """
@@ -290,7 +288,7 @@ def should_include_alert(alert):
         return False
     
     # Filter by subsystem if specified (for tracepoints)
-    if INCLUDED_SUBSYSTEMS and subsys and subsys not in INCLUDED_SUBSYSTEMS:
+    if INCLUDED_SUBSYSTEMS and event_type == 'process_tracepoint' and subsys and subsys not in INCLUDED_SUBSYSTEMS:
         return False
     
     # Get binary name
@@ -371,8 +369,12 @@ def runtime_stats():
         for alert in alerts:
             # Extract event info based on type
             if 'process_tracepoint' in alert:
-                event_type = alert['process_tracepoint'].get('event', 'unknown')
-                process_name = alert['process_tracepoint'].get('process', {}).get('binary', 'unknown')
+                tp = alert['process_tracepoint']
+                # Tetragon tracepoint: subsys="syscalls", call="sys_enter_clone"
+                call = tp.get('call') or tp.get('event') or 'unknown'
+                subsys = tp.get('subsys', '')
+                event_type = call if call != 'unknown' else (f"{subsys}/{call}" if subsys else 'unknown')
+                process_name = tp.get('process', {}).get('binary', 'unknown')
             elif 'process_exec' in alert:
                 event_type = 'execve'
                 process_name = alert['process_exec'].get('process', {}).get('binary', 'unknown')
@@ -393,10 +395,11 @@ def runtime_stats():
                 'setns', 'unshare',                          # namespace/container escape
                 'security_inode_unlink',                     # file deletion at LSM
                 'security_inode_rename',                     # file rename at LSM
+                '__x64_sys_setns', '__x64_sys_unshare',
             ]):
                 by_severity['critical'] += 1
             elif any(x in event_lower for x in [
-                'clone', 'accept', 'connect', 'bind',        # DoS / network
+                'clone', 'accept', 'connect', 'bind',        # DoS / network (tracepoint call names)
                 'security_socket_connect',                   # socket connect LSM
                 'fd_install',                                # fd creation (DoS)
                 'security_bprm_check',                       # binary exec check
@@ -404,6 +407,7 @@ def runtime_stats():
                 by_severity['high'] += 1
             elif any(x in event_lower for x in [
                 'execve', 'x64_sys_execve',                  # process execution
+                '__x64_sys_execve',
                 'chmod', 'fchmodat',                         # permission changes
                 'chown', 'fchownat',                         # ownership changes
                 'security_file_open',                        # file open LSM

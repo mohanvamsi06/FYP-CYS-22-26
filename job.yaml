@@ -111,11 +111,16 @@ spec:
                   echo "$line" >> "$OUTPUT_FILE"
                   
                   # Log to stdout for debugging
-                  binary=$(echo "$line" | jq -r '.process_exec.process.binary // .process_tracepoint.process.binary // "unknown"' 2>/dev/null)
-                  subsys=$(echo "$line" | jq -r '.process_tracepoint.subsys // "N/A"' 2>/dev/null)
-                  event=$(echo "$line" | jq -r '.process_tracepoint.event // "N/A"' 2>/dev/null)
+                  binary=$(echo "$line" | jq -r '.process_kprobe.process.binary // .process_tracepoint.process.binary // .process_exec.process.binary // "unknown"' 2>/dev/null)
+                  call=$(echo "$line" | jq -r '.process_tracepoint.call // .process_kprobe.function_name // "N/A"' 2>/dev/null)
                   
-                  echo "[EVENT] subsys=$subsys event=$event binary=$binary"
+                  echo "[EVENT] call=$call binary=$binary"
+                else
+                  # Try to extract JSON from structured log line (timestamp prefix etc.)
+                  json_part=$(echo "$line" | grep -oP '\{.*\}' | tail -1)
+                  if [ -n "$json_part" ] && echo "$json_part" | jq -e . >/dev/null 2>&1; then
+                    echo "$json_part" >> "$OUTPUT_FILE"
+                  fi
                 fi
               done
           volumeMounts:

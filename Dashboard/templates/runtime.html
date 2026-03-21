@@ -69,23 +69,18 @@ let autoRefreshInterval = null;
 let allAlerts = [];
 
 function getSeverity(alert) {
-  let eventType = '';
-  
-  if (alert.process_tracepoint) {
-    eventType = alert.process_tracepoint.event || '';
-  } else if (alert.process_exec) {
-    eventType = alert.process_exec.function_name || 'execve';
-  } else if (alert.process_kprobe) {
-    eventType = alert.process_kprobe.function_name || '';
-  }
-  
-  eventType = eventType.toLowerCase();
-  
-  if (eventType.includes('setuid') || eventType.includes('capset') || eventType.includes('sigkill') || eventType.includes('unshare') || eventType.includes('mount')) {
+  const eventType = getEventType(alert).toLowerCase();
+
+  if (['setns', 'unshare', '__x64_sys_setns', '__x64_sys_unshare',
+       'security_inode_unlink', 'security_inode_rename',
+       'setuid', 'capset', 'mount', 'sigkill'].some(x => eventType.includes(x))) {
     return 'critical';
-  } else if (eventType.includes('clone') || eventType.includes('accept') || eventType.includes('connect') || eventType.includes('bind')) {
+  }
+  if (['clone', 'accept', 'connect', 'bind',
+       'security_socket_connect', 'fd_install', 'security_bprm_check'].some(x => eventType.includes(x))) {
     return 'high';
-  } else if (eventType.includes('execve') || eventType.includes('ptrace') || eventType.includes('chmod') || eventType.includes('chown')) {
+  }
+  if (['execve', 'chmod', 'fchmodat', 'chown', 'fchownat', 'security_file_open'].some(x => eventType.includes(x))) {
     return 'medium';
   }
   return 'low';
@@ -93,11 +88,12 @@ function getSeverity(alert) {
 
 function getEventType(alert) {
   if (alert.process_tracepoint) {
-    return alert.process_tracepoint.event || 'unknown';
-  } else if (alert.process_exec) {
-    return 'execve';
+    // Tetragon tracepoint: call = "sys_enter_clone", subsys = "syscalls"
+    return alert.process_tracepoint.call || alert.process_tracepoint.event || 'unknown';
   } else if (alert.process_kprobe) {
     return alert.process_kprobe.function_name || 'kprobe';
+  } else if (alert.process_exec) {
+    return '__x64_sys_execve';
   }
   return 'unknown';
 }
